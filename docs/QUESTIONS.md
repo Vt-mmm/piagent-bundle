@@ -2,6 +2,11 @@
 
 Mục mở. Làm tiếp phần không bị chặn, hỏi gộp.
 
+0. **Đã giải (spike 29/10/2026, Pi 1.3.0 thật qua pty, docs/spikes/i1-i4):**
+   - I1 làm được: `setEditorComponent` với `CustomEditor` bọc setter `onSubmit` (Pi gán `newEditor.onSubmit = defaultEditor.onSubmit` sau khi tạo). `/model` và `/share` bị chặn, hiện cảnh báo tiếng Việt. Còn lại: autocomplete vẫn liệt kê lệnh (chỉ là hiển thị).
+   - I4 làm được bằng cách hoàn lại: `thinking_level_select` gọi `pi.setThinkingLevel(mức cũ)`; `/thinking low` bị đưa về `medium`. Giới hạn: UI nháy "Thinking level: low" trước khi bị hoàn. Chưa kiểm Shift+Tab.
+   - I3 (che secret khi stream) và I8 (gzip, đổi token giữa request) chưa spike; theo yêu cầu owner, chấp nhận có thể không xử lý hết.
+
 1. **Tính năng có thể không làm được trên Pi 1.3.0** (parity.md, mục I1–I16; điều kiện dừng sớm của prompt):
    - I1: Pi xử lý `/model`, `/login`, `/share`, `/bug` trước sự kiện `input`, nên extension không chặn được trực tiếp. Cần spike (bọc ô nhập). Nếu không được, chấp nhận mức nào?
    - I3: không che được secret trong văn bản model đang stream.

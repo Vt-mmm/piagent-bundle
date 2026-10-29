@@ -15,3 +15,5 @@ Cập nhật sau mỗi bước con. Mỗi dòng có bằng chứng (lệnh, kế
 | baseline-studio-metrics.md | số liệu Studio 14 ngày VNexus BE xong (SELECT chỉ đọc) | 328 run, 1,48% gateway lỗi, 325 disconnect |
 | baseline soak lane + A/B của `piagent studio` | CHƯA CHẠY | |
 | CI lần đầu trên 4 repo | xem `gh run list` | |
+| Spike I1 (chặn /model, /login, /share, /bug) | ĐẠT trên Pi 1.3.0 | `python3 docs/spikes/i1-i4/drive.py "/model" "/share"` → cảnh báo "bị chặn trong chế độ công ty" |
+| Spike I4 (ép thinking theo Harness) | ĐẠT bằng hoàn lại, UI nháy một lần | `/thinking low` → log `reverted low -> now medium`; chưa kiểm Shift+Tab |
