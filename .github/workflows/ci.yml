@@ -20,3 +20,26 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+  e2e:
+    # Real Pi 1.3.0 with the three packages at the commits in bundle.pins.json, a simulated Studio and broker.
+    # The build needs the npm registry (Pi's pinned install); the tests then run offline.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install bubblewrap and allow user namespaces (Linux sandbox)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bubblewrap
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+          bwrap --ro-bind / / --unshare-net true
+      - run: npm ci
+      - run: npm run test:e2e

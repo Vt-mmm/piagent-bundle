@@ -10,7 +10,7 @@ Cập nhật sau mỗi bước con. Mỗi dòng có bằng chứng (lệnh, kế
 | Skeleton + CI + lockfile | xong (chờ CI chạy lần đầu) | `npm test` local: 2 pass mỗi repo |
 | Branch protection, secret scanning, push protection | xem mục dưới | |
 
-| piagent-bundle: manifest sha256, kiểm hash, doctor, launch plan | xong phần logic, test offline | `npm test` 6 pass (hash lệch → `hash-mismatch:sandbox`; plan chỉ chứa đường dẫn bộ; env agent dir riêng). Chưa đóng gói Pi thật, chưa chạy trên mini. |
+| piagent-bundle: manifest sha256, kiểm hash, doctor, launch plan | xong phần logic, test offline | `npm test` 6 pass (hash lệch → `hash-mismatch:sandbox`; plan chỉ chứa đường dẫn bộ; env agent dir riêng). Đóng gói và chạy trên mini: xem 2.5. |
 | runbook.md | bản nháp | các bước chưa kiểm trên máy thật |
 | 2.4b agentwatch (macOS) | PR mở, chưa merge: https://github.com/Vt-mmm/agentwatch/pull/18 | `swift test` 371 test, 0 lỗi; 8 test mới: đường piagent trùng snapshot trước thay đổi, hash lệch không mở, key không vào tiến trình Pi. Windows chưa làm (không có dotnet). Cần chốt với harness: biến `AGENT_WATCH_MANAGED_BINDING`. |
 | 2.4a agent-studio | xem session p2-studio | |
@@ -30,10 +30,10 @@ Mọi bằng chứng dưới đây chạy với Studio và broker GIẢ LẬP (k
 
 | Nghiệm thu B | Trạng thái | Bằng chứng |
 |---|---|---|
-| 1. Một model "Auto (công ty)"; chặn `/login /model /scoped-models /share /bug` | ĐẠT một phần | Pi 1.3.0 thật qua pty (`tests/pi-smoke.test.mjs`): cả 5 lệnh hiện "Lệnh /x bị chặn trong chế độ công ty"; Ctrl+P: "Only one model in scope". Footer hiện id `agent-watch-auto`, không phải tên (QUESTIONS 5). Một-model dựa vào `enabledModels` của launcher + hoàn `model_select`. |
+| 1. Một model "Auto (công ty)"; chặn `/login /model /scoped-models /share /bug` | ĐẠT một phần | Pi 1.3.0 thật qua pty (`tests/pi-smoke.test.mjs`): cả 5 lệnh hiện "Lệnh /x bị chặn trong chế độ công ty"; Ctrl+P: "Only one model in scope". Footer hiện id `agent-watch-auto`, không phải tên (QUESTIONS P5). Một-model dựa vào `enabledModels` của launcher + hoàn `model_select`. |
 | 2. Grant theo run qua broker, đăng ký lại token ở `turn_start`, không hook `context`, reset chỉ khi `messageType==='user'`; 3 wire; đổi model giữa hội thoại | ĐẠT (giả lập) | `tests/provider.test.mjs`: Anthropic, Responses, Chat Completions đều `authorized`; renew đúng 1 lần mỗi turn; 4 run liên tiếp đổi Claude→Codex→vendor→Claude không lỗi; lịch sử có thinking có chữ ký của Claude chạy tiếp trên Codex và vendor. `pi -p` thật: broker `grant…close` đủ. |
 | 3. Thinking theo Harness | ĐẠT (giả lập) | `thinking_level_select` mức cấm bị hoàn về mức trước, hoặc mức gần nhất; run xin mức gần nhất Harness cho (`tests/small-modules.test.mjs`, `provider.test.mjs`). Chưa kiểm Shift+Tab; UI có thể nháy một lần. |
-| 4. Session id cố định; chờ Studio không giới hạn; log `disconnect` | ĐẠT (giả lập) | Cùng `X-Claude-Code-Session-Id` qua 4 request/2 wire. Studio giả tắt ≥ 120 s (fake clock): lượt chờ rồi chạy tiếp, `logs/studio-link.jsonl` có `studio_disconnect` `resumed`, báo `POST /studio/v1/managed/disconnects`. Stop kết thúc chờ. Giới hạn: QUESTIONS 7. |
+| 4. Session id cố định; chờ Studio không giới hạn; log `disconnect` | ĐẠT (giả lập) | Cùng `X-Claude-Code-Session-Id` qua 4 request/2 wire. Studio giả tắt ≥ 120 s (fake clock): lượt chờ rồi chạy tiếp, `logs/studio-link.jsonl` có `studio_disconnect` `resumed`, báo `POST /studio/v1/managed/disconnects`. Stop kết thúc chờ. Giới hạn: QUESTIONS P7. |
 | 5. Không token trong env, file, log | ĐẠT (giả lập) | `tests/no-token-leak.test.mjs` grep `as_run_` trên stream, bus, UI, entry hội thoại, đăng ký provider, stdout/stderr, mọi file ở state dir, `process.env`; tắt hàm che secret thì test đỏ. `pi -p` thật cũng grep sạch. |
 
 Chưa kiểm: chạy thật Claude/Codex qua Agent Watch của mini (chưa có đồng ý của owner); Windows; Shift+Tab; tool failures/workspace/memory/settle (module của harness); `helper_slots` thật từ Studio.
@@ -68,7 +68,7 @@ Mọi bằng chứng chạy với Studio, bus, provider và sandbox GIẢ LẬP 
 | Pi 1.3.0: reset cổng chỉ khi `messageType === 'user'`, token đăng ký lại ở `turn_start` (provider) | ĐẠT (phần harness) | `harness-extension`: "the gate resets only when before_agent_start is a member's message" |
 | UI công ty: header, footer không USD, `/style`, file trạng thái Agent Watch | ĐẠT (logic) | `harness-company-ui`: 7 pass; định dạng khớp `agentwatch/Sources/AgentWatchCore/PiagentStatus.swift` |
 
-Chưa kiểm: chạy với provider/sandbox thật (grant child, `tools.child` còn là đề xuất, `run.state` còn thiếu trường harness cần: QUESTIONS 10); TUI thật; Studio thật; A/B eval với baseline 2.0; Windows; thư mục nhiều repo cho team memory; báo cáo process từng vòng checklist (QUESTIONS 13); khi `pi` thật chạy `agent_before_settle` với chuỗi gửi lại liên tiếp.
+Đã chạy với provider và sandbox thật ở 2.5 (grant child, `tools.child`, `run.state`; xem 2.5). Chưa kiểm: TUI thật cho `ask_user`; Studio thật; A/B eval với baseline 2.0; Windows; thư mục nhiều repo cho team memory; báo cáo process từng vòng checklist (QUESTIONS H13); khi `pi` thật chạy `agent_before_settle` với chuỗi gửi lại liên tiếp.
 
 
 ## 2.2 Sandbox (PR Vt-mmm/piagent-sandbox#3, branch `feat/sandbox`)
@@ -105,3 +105,28 @@ Chưa làm/chưa kiểm (nói thẳng):
 | Chỉ số tách theo runtime và bản bộ | xong | `GET /admin/teams/{id}/runtime-metrics`; join qua run, không lưu thêm, không có nội dung prompt |
 | Test | `go vet`, `go test ./... -race` trên postgres:17.6 `studio_test`, `tsc --noEmit` đều qua | test chứng minh client cũ/runtime `piagent` chạy như trước |
 | Còn lại cho owner | review + merge PR, đặt `STUDIO_MIN_BUNDLE_VERSION`, deploy khi sẵn sàng | UI chưa có chỗ đặt runtime riêng của key (chỉ API) |
+
+## 2.5 Tích hợp ba package (branch `feat/integration`)
+
+Mọi bằng chứng chạy OFFLINE trên mini (macOS, Node 22.23.3): Pi 1.3.0 thật, Studio và broker GIẢ (stdio), model giả theo kịch bản, HOME/agent dir/binding/project là thư mục tạm. Không gọi Studio, model, Keychain hay Agent Watch thật; không ghi `~/.pi/agent`, `~/.piagent/agent`. Ba package ở commit ghim trong `bundle.pins.json`: provider `1b40fa4`, sandbox `f1ac85b` (không đổi), harness `13afcba`. `npm test` ở bundle: 9 pass. `npm run test:e2e`: 11 pass, ~48 giây (build bộ ~10 giây từ GitHub + 5 file chạy Pi).
+
+| Việc | Trạng thái | Bằng chứng |
+|---|---|---|
+| 1. Chốt lệch bus, hợp đồng v1 thống nhất | ĐẠT | `docs/package-contract.md` viết lại. 5 lệch thật tìm ra khi chạy cùng nhau và đã sửa (commit nhỏ trên đúng nhánh `feat/*`, mỗi cái có test): (1) harness không phát `tools.child.close` nên sandbox rò một boundary mỗi helper (harness `e0a278e`); (2) harness kiểm tập tool ở `session_start`, trước khi sandbox (nạp sau) attest, nên chặn nhầm phiên và báo Studio một toolset tốt (harness, test `the sandbox loads after the harness`); (3) provider chỉ phát `run.state` khi run bắt đầu, sau `before_agent_start` đầu của harness, nên **tin nhắn đầu của phiên chạy không có cổng hoàn tất**; sửa: phát ngay ở `session_start` (provider, test `session start tells the harness the Harness before any run exists`); (4) báo cáo `managed_toolset_untrusted` ở `before_agent_start` đầu không có run để dùng grant, bị bỏ và không thử lại; sửa: thử lại ở tool call bị chặn đầu (harness); (5) helper nhận `memory_search` dù Studio không có capability `memory` (harness). Binding: provider đọc `AGENT_WATCH_MANAGED_BINDING` (agentwatch#18 đặt biến này) và chấp nhận binding không có `model` (provider `32792b2`). H10 đã giải (QUESTIONS). |
+| 2. E2E trên Pi 1.3.0 thật | ĐẠT (macOS chạy tay; CI xem dưới) | `npm run test:e2e`, file `tests/e2e/company.e2e.test.mjs`: |
+| 2a. Toolset guard thấy sourceInfo từ sandbox | ĐẠT | cả 7 tool lõi có `sourceInfo.path` trong thư mục `piagent-sandbox`; `piagent:tools.blocked` không phát; không có `tool-failures` `managed_toolset_untrusted` |
+| 2b. Vòng sửa lỗi với cổng hoàn tất | ĐẠT | model giả: `npm test` (fail) → `write` sửa → nói xong mà chưa chạy check → harness gửi lại ("Harness process check…", `npm test` lấy từ `## Checks` của AGENTS.md, đúng một lần) → `npm test` pass (`# pass 1`) → mới kết thúc; 5 request main |
+| 2c. Helper review: grant `child` qua provider, tool chỉ đọc của sandbox | ĐẠT | broker thấy `child` cho role `review`; request của helper có tool `find grep ls read submit_review` (không edit/write/bash; không memory); helper đọc được `src/add.js` đã sửa qua tool `read` của sandbox; probe thấy `tools.child {readOnly:true, commands:false, key:'review'}` rồi `tools.child.close`; grant helper đóng |
+| 2d. Process report v3 + settle khớp hợp đồng | ĐẠT | `close` của main mang report v3 đúng từng giá trị (`checks:2, checks_failed:1, verified, reviews:1, reviewed, fix_loops:1, outcome:'clean'`), qua `tests/e2e/helpers/contract.mjs` (luật Studio, có test riêng); `POST /v1/managed/settle` bằng token của helper `review`, body hợp lệ, `outcome:'succeeded'` |
+| 2e. Không có `as_run_` | ĐẠT | grep stdout, stderr, mọi file trong thư mục tạm (agent dir, phiên, status, log), mọi request tới model, mọi body gửi Studio, bản ghi bus: không có. Token của broker giả tạo bằng ghép chuỗi lúc chạy để file broker cũng sạch |
+| 2f. `/model` bị chặn | ĐẠT | qua pty (cần python3): `/model /login /scoped-models /share /bug` đều "bị chặn trong chế độ công ty"; Ctrl+P "Only one model in scope" |
+| 2g. Extension giả chiếm `bash` | ĐẠT | extension nạp trước sandbox, đăng ký `bash` lúc `session_start`: `getAllTools()` cho `sourceInfo` của extension giả; mọi tool call trả `managed-toolset-untrusted`, lệnh giả không chạy, file không bị tạo, Studio nhận đúng một `tool-failures` (`managed_toolset_untrusted`). Thêm: đăng ký `bash` lúc nạp thì **Pi 1.3.0 từ chối khởi động** (status ≠ 0, không request model); extension nạp sau sandbox không chiếm được |
+| 3. `scripts/build-bundle.mjs` | ĐẠT trên mini | `node scripts/build-bundle.mjs --out /private/tmp/claude-501/bundle-real-*/bundle` → `doctor.ok: true`, 150 MB, ~10 giây; Pi 1.3.0 riêng (`npm ci --ignore-scripts` từ `pi-lock/package-lock.json`, mọi dependency có integrity), ba package đúng commit lấy từ GitHub công khai, không script cài đặt, không dependency riêng. `bin/pi` = file `launchPlan` chạy; `node pi/bin/pi --version` → `1.3.0` với PATH `/usr/bin:/bin` (không dùng Pi global). Build hai lần ra cùng bốn hash (`86c4f55bc3 7e5919390f ca95b67724 c0bac432cb`). `node bin/piagent-bundle-doctor.mjs <bộ>` → `ok: true` (exit 0); thêm 1 byte vào `harness/src/bus.mjs` → `hash-mismatch:harness` (và `hash-mismatch:pi`, vì phần `pi` bao các package; QUESTIONS I20), exit 1. Test tự động: `tests/e2e/bundle.e2e.test.mjs` 5 pass |
+| 4. Chạy cùng nhau trên CI | CHƯA CÓ KẾT QUẢ lúc viết | job `e2e` (ubuntu + macos) trong `.github/workflows/ci.yml`; điền kết quả sau khi PR chạy |
+
+Chưa làm/chưa kiểm (nói thẳng):
+- Chưa chạy e2e tay trên Linux và Windows; Linux chỉ qua CI.
+- Studio, broker, model đều GIẢ. Chưa chạy bộ này qua Agent Watch/Studio thật, chưa thử Codex/vendor, chưa thử `helper_slots`, memory, `ask_user` trong TUI, compaction, làm tiếp checklist, Bypass.
+- `launchPlan` chưa được Agent Watch (Swift, agentwatch#18) dùng thật: PR đó dựng argv/env riêng và đang thiếu `PI_OFFLINE`, `PI_TELEMETRY=0`, `PI_SKIP_VERSION_CHECK=1` (QUESTIONS I18). Chưa kiểm hash của Swift với bộ dựng ở đây (hai bên cùng thuật toán, nhưng chưa chạy Swift trên bộ thật).
+- `pi -p` không in gì sau lượt có cổng hoàn tất (QUESTIONS I19).
+- Chưa đo A/B với baseline 2.0.

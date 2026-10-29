@@ -25,7 +25,7 @@ export function buildManifest({ bundleVersion, parts }) {
   for (const name of PARTS) {
     const part = parts[name];
     if (!part) throw new Error(`missing part: ${name}`);
-    out.parts[name] = { version: part.version, path: part.path, sha256: hashDir(part.dir) };
+    out.parts[name] = { version: part.version, path: part.path, sha256: hashDir(part.dir), ...(part.commit ? { commit: part.commit } : {}) };
   }
   return out;
 }

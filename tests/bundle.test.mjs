@@ -47,6 +47,6 @@ test('launch plan uses only bundle paths and its own agent dirs', () => {
   assert.deepEqual(plan.args.slice(0, 2), ['--no-extensions', '-e']);
   assert.equal(plan.args.at(-1), 'builtin:mcp');
   assert.equal(plan.args.filter(a => a === '-e').length, 4);
-  assert.deepEqual(plan.env, { PI_CODING_AGENT_DIR: '/a/agent', PI_CODING_AGENT_SESSION_DIR: '/a/ManagedSessions' });
+  assert.deepEqual(plan.env, { PI_CODING_AGENT_DIR: '/a/agent', PI_CODING_AGENT_SESSION_DIR: '/a/ManagedSessions', PI_OFFLINE: '1', PI_TELEMETRY: '0', PI_SKIP_VERSION_CHECK: '1' });
   assert.ok(!JSON.stringify(plan).includes('as_run_'));
 });
