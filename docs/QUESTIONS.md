@@ -24,3 +24,11 @@ Mục mở. Làm tiếp phần không bị chặn, hỏi gộp.
 - **F122, F125, F126, F155:** bỏ có chủ đích như đề xuất. **F121 (Herdr):** giữ "phải làm", ưu tiên thấp, làm sau cùng.
 - **Branch protection bắt buộc CI xanh:** bật sau khi CI của repo xanh ổn định hai lần liên tiếp trên PR.
 - **Chạy thật qua Agent Watch/Studio của mini:** chỉ làm ít và nhỏ, với key test không phải VNexus BE; việc nào chưa được owner cho phép riêng thì ghi "chưa kiểm".
+
+## Câu hỏi từ bước 2.1 (provider)
+
+5. **Footer của Pi hiện id model (`agent-watch-auto`), không hiện tên "Auto (công ty)".** Tên chỉ hiện ở danh sách chọn model (đã bị chặn). Đổi id (binding hiện bắt buộc `agent-watch-auto`) hay chấp nhận? Tạm: chấp nhận.
+6. **Tool failures, workspace report, memory, settle** gửi Studio cần grant. Tạm: harness gọi qua `piagent:studio.call` (provider giữ token). Chấp nhận kênh này không? Provider chưa có sẵn các module đó (thuộc harness 2.3).
+7. **Chờ Studio không giới hạn khi Studio tắt giữa lúc đang stream:** lượt bị cắt phải nhờ retry của Pi (`retry.maxRetries` trong settings của launcher; tạm 3). Studio chập chờn hơn số đó thì lượt lỗi. Có cần provider tự thử lại không (cần bọc thêm, hoặc dừng chấp nhận)?
+8. **Id model trong transcript:** các tin assistant mang id model thật (do stream trong), còn model đang chọn là `agent-watch-auto`, nên Pi coi mỗi lượt là "model khác" và đổi thinking block có chữ ký thành text. Giữ hành vi cũ. Muốn giữ chữ ký thì đặt id model theo route (mất tên cố định).
+9. **Chạy thật trên mini** (Claude run và Codex run qua broker Agent Watch): chưa làm, chờ owner đồng ý trong chat.
