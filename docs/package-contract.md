@@ -23,6 +23,17 @@ Phía sandbox/harness (nháp, chốt ở 2.2/2.3):
 | `piagent:tools.attest` | sandbox → harness | `{ v, tools: [{ name, source }] }` — để harness kiểm `sourceInfo` |
 | `piagent:permission.mode` | sandbox → harness | `{ v, mode: 'ask'\|'full'\|'bypass' }` |
 
+Đề xuất thêm từ harness 2.3 (additive, v1; provider/sandbox chưa xác nhận lúc viết):
+
+| Kênh / trường | Hướng | Nội dung |
+|---|---|---|
+| `piagent:run.state` thêm | provider → harness | `capabilities: string[]` (danh sách Studio, ví dụ `memory`, `managed.settle.v1`); `scope: { studio_instance_id, dataset_epoch, auth_generation, key_id }` (outbox team memory); `team`; trong `harness`: `workflow { plan, verify, review, max_fix_loops, lanes, main_web_lookups }`, `helperLimit` (số, từ trường tùy chọn `helper_slots`; không có thì harness dùng 8), `features` (broker_features) |
+| `piagent:studio.call` thêm | harness → provider | `role?` (`review`, `review#2`...): dùng token của helper đó. Settle `/v1/managed/settle` phải dùng token helper, không phải main |
+| `piagent:tools.child` | harness → sandbox | `{ v, readOnly: true, commands, web, key, reply }` → `reply({ ok, tools: [ToolDefinition] })`: read, grep, find, ls (+ bash khi `commands`, project chỉ đọc, không mạng); không bao giờ edit/write |
+| `piagent:tools.blocked` | harness → mọi bên | `{ v, bad: [{ name, found }] }` khi 7 tool lõi không đến từ sandbox |
+
+Quy tắc kiểm `sourceInfo` (đo trên Pi 1.3.0 thật, `-e <file>`): `{ path: <đường dẫn tuyệt đối file vào>, source: 'cli' }`; tool built-in là `builtin:<tên>`. Sandbox tự khai `source: 'piagent-sandbox'`; harness chấp nhận khi một thư mục trong `path` tên đúng như vậy và cả 7 tool cùng một file. Thư mục của gói phải tên `piagent-sandbox`.
+
 Khác với nháp v0: `grant.result` bỏ (kết quả đi qua `reply`, vì cần trả hàm `stream`); thêm `grant.close`, `run.process`, `studio.call`, `notice`.
 
 ## Ma trận version
@@ -30,6 +41,7 @@ Khác với nháp v0: `grant.result` bỏ (kết quả đi qua `reply`, vì cầ
 | provider | harness | sandbox | bus |
 |---|---|---|---|
 | 0.x (2.1) | chưa | chưa | v1 |
+| 0.x (2.1) | 0.x (2.3, feat/harness) | chưa (2.2) | v1 + đề xuất ở trên |
 
 Thay đổi sau này ghi ở đây kèm ma trận version.
 

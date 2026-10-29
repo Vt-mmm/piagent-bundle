@@ -31,3 +31,33 @@ Mọi bằng chứng dưới đây chạy với Studio và broker GIẢ LẬP (k
 | 5. Không token trong env, file, log | ĐẠT (giả lập) | `tests/no-token-leak.test.mjs` grep `as_run_` trên stream, bus, UI, entry hội thoại, đăng ký provider, stdout/stderr, mọi file ở state dir, `process.env`; tắt hàm che secret thì test đỏ. `pi -p` thật cũng grep sạch. |
 
 Chưa kiểm: chạy thật Claude/Codex qua Agent Watch của mini (chưa có đồng ý của owner); Windows; Shift+Tab; tool failures/workspace/memory/settle (module của harness); `helper_slots` thật từ Studio.
+
+## 2.3 Harness (PR Vt-mmm/piagent-harness#3, branch `feat/harness`, commit `d5de142`)
+
+Mọi bằng chứng chạy với Studio, bus, provider và sandbox GIẢ LẬP (không gọi Studio, model, Keychain thật; không ghi `~/.pi/agent`). `npm test` trong piagent-harness: 145 pass, 0 fail, ~2 giây, không dòng nào quá 200 ký tự.
+
+| Nghiệm thu D | Trạng thái | Bằng chứng (`node --test tests/<file>`) |
+|---|---|---|
+| Cổng hoàn tất: sửa code không chạy check bị gửi lại | ĐẠT | `harness-completion-gate`: 9 pass ("no check sends back", check cũ hết hiệu lực sau sửa, docs-only, hết vòng thì "unverified", bị dừng thì "interrupted") |
+| `npm test \| tail` có fail không tính pass | ĐẠT | cùng file: "piped check: failing output is not a pass"; `0 failed` không bị tính nhầm |
+| `pytest -k x`, `tsc --version` không là check | ĐẠT | cùng file: 8 lệnh lọc/version → `isCheckCommand` false; `pytest`, `tsc --noEmit`, `go test ./...` → true |
+| Sửa file test/CI chuyển làn rủi ro | ĐẠT | `harness-test-edit-lane`: 4 pass; patch 1 file test → `risky`, "suggest" thành "require" |
+| Vòng sửa verify và review riêng | ĐẠT | `harness-fix-loop-counters`: 3 pass; `max_fix_loops=1` vẫn cho 1 vòng review sau khi hết vòng verify; `fix_loops` báo cáo = tổng |
+| Check từ `## Checks` rồi manifest | ĐẠT | `harness-checks-source`: 4 pass |
+| Helper review: session Pi con chỉ đọc, grant riêng `child` qua bus, kết quả qua tool schema, lỗi chặn gửi lại agent | ĐẠT (bus giả) | `harness-review-helper`: 9 pass; tool con chỉ `read grep find ls submit_review` (không edit/write/bash); `grant.request {role, slot}`/`grant.close`; JSON viết trong văn bản bị bỏ qua; không gọi tool thì hỏi lại 1 lần rồi "unverifiable"; blocking gửi lại agent. CHƯA kiểm với provider/sandbox thật |
+| Reviewer chỉ đọc file đã đổi | ĐẠT | cùng file: prompt "Since your last review only these files changed: ..."; `harness-review-split` focus chỉ các phần có file đổi |
+| Patch > 120 KB chia phần | ĐẠT | `harness-review-split`: 7 pass; 4 file x 50 KB → 2 phần, mỗi phần <= 120 KB, mỗi phần một lần hỏi child, gộp finding; file > 400 KB ghi "Not read"; > 96 phần thì `too-large` |
+| Ledger, phản đối brief: bất đồng lần hai chuyển member, lượt kết "disputed" | ĐẠT | `harness-ledger-objections`: 6 pass; phản đối lần hai → `managed-helper-disputed`, `outcome: disputed` ở v3 và outcome cũ ở v2 |
+| Settle đúng cho từng helper succeeded/failed/cancelled/unverifiable | ĐẠT (stub Studio) | `harness-helper-settle`: 6 pass; body `/v1/managed/settle` có `spec`; thử lại 500ms/2s khi 5xx/429, không thử khi 4xx; không có `managed.settle.v1` thì không gửi |
+| Số lần gọi helper từ Studio, mặc định cũ | ĐẠT | `harness-helper-limit`: 9 pass; `helperLimit` 2 → lần 3 bị từ chối; không có → 8 |
+| `ask_user` trong Terminal Pi; headless nói rõ giả định | ĐẠT (UI giả) | `harness-ask-user`: 6 pass; chưa chạy trong TUI thật |
+| Team memory, `memory_ask` protocol 3, lessons chỉ từ bằng chứng | ĐẠT (Studio stub) | `harness-memory`: 15 pass; brief, ask (timeout 50 s, nguồn), retain + outbox + quarantine, lesson chỉ khi check fail → sửa → pass; rerun không đổi gì không là lesson |
+| Làm tiếp checklist tối đa 30 bước, dừng sau 2 vòng không đổi | ĐẠT | `harness-continuation`: 9 pass; `harness-extension` chạy vòng đầy đủ |
+| Compaction 90% hoặc 300k, giữ plan | ĐẠT (logic) | `harness-compaction`: 5 pass; 1M cửa sổ → 300k; plan nằm trong instructions và tin `agent-watch-plan-kept`. Chưa chạy compaction thật của Pi |
+| Process report v3 đủ trường như bản cũ | ĐẠT | `harness-process-report`: 7 pass; so từng byte với báo cáo `RunProcess` của Piagent 1.47.0 trên cùng kịch bản (`tests/fixtures/process-report-golden.json`) cho v1, v2, v3 |
+| Chặn mọi tool call khi 7 tool lõi không từ sandbox, báo Studio | ĐẠT | `harness-toolset-guard`: 6 pass; extension giả đăng ký `bash` → chặn + `tool-failures` code `managed_toolset_untrusted`; sourceInfo mẫu đo trên Pi 1.3.0 thật |
+| Pi 1.3.0: reset cổng chỉ khi `messageType === 'user'`, token đăng ký lại ở `turn_start` (provider) | ĐẠT (phần harness) | `harness-extension`: "the gate resets only when before_agent_start is a member's message" |
+| UI công ty: header, footer không USD, `/style`, file trạng thái Agent Watch | ĐẠT (logic) | `harness-company-ui`: 7 pass; định dạng khớp `agentwatch/Sources/AgentWatchCore/PiagentStatus.swift` |
+
+Chưa kiểm: chạy với provider/sandbox thật (grant child, `tools.child` còn là đề xuất, `run.state` còn thiếu trường harness cần: QUESTIONS 10); TUI thật; Studio thật; A/B eval với baseline 2.0; Windows; thư mục nhiều repo cho team memory; báo cáo process từng vòng checklist (QUESTIONS 13); khi `pi` thật chạy `agent_before_settle` với chuỗi gửi lại liên tiếp.
+
