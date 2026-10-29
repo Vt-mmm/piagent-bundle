@@ -152,3 +152,47 @@ Mọi script nằm ngoài repo (scratchpad của phiên review) và chỉ dùng 
 3. Chạy lại review sau khi sửa; chạy riêng bộ test sandbox trên Linux/bwrap (L6).
 
 Đây là review nội bộ bằng đọc code và thử nghiệm cục bộ, không phải kiểm toán độc lập; chưa kiểm: Linux/bwrap thật, đường `web_fetch` thật, hành vi `securityd` với Keychain thật, kênh qua registry (T4), hiển thị thẻ xác nhận (L2).
+
+## Thông tin nội bộ trong lịch sử
+
+Cập nhật 2026-10-29. Quét `git grep -iE` với danh sách chuỗi nội bộ (tên team, tên tác giả, cổng Studio cục bộ, đường dẫn home, tên tổ chức) trên mọi nhánh remote của bốn repo, cộng nội dung title/body của mọi PR (`gh pr view --json body`).
+
+### Kết quả theo nhánh/PR
+
+| Repo | Nhánh (PR) | Tip hiện tại | Lịch sử cũ |
+|---|---|---|---|
+| bundle | `docs/phase-2-0` (#3) | sạch (`0ee71c5`) | còn chuỗi cũ |
+| bundle | `docs/phase-2-1-provider` (#7) | sạch (`82ca0a1`) | còn |
+| bundle | `docs/phase-2-2-sandbox` (#9) | sạch (`aa58479`) | còn |
+| bundle | `docs/phase-2-3-harness` (#8) | sạch (`a01251f`) | còn |
+| bundle | `docs/protocol-sync` (#13) | sạch (`84b680c`) | còn |
+| bundle | `feat/integration` (#11) | sạch (`67bb568`) | còn |
+| bundle | `docs/security-fix-status` (#14) | sạch (`7bd1edf`) | còn (`2437706`) |
+| bundle | `docs/security-review` (#10) | sạch (`9812775`) | còn (`2437706`) |
+| bundle | `docs/phase-2-0-clean` (#15), `docs/progress-2-4a/b`, `feat/bundle`, `fix/security-bundle`, `main` | sạch | không có |
+| provider, sandbox, harness | mọi nhánh (`feat/*`, `fix/security-*`, `main`) | sạch | không có |
+
+Title và body của mọi PR ở cả bốn repo không chứa chuỗi nào. Mỗi nhánh "còn" nhận đúng một commit thay chuỗi, không viết lại lịch sử, nên commit cũ vẫn xem được qua tab Commits, `refs/pull/N/head` và mọi clone.
+
+### Commit còn chứa chuỗi (chỉ repo piagent-bundle)
+
+| SHA | Nội dung | Chuỗi |
+|---|---|---|
+| `9b558df` | thêm `docs/baseline-studio-metrics.md`, `docs/progress.md`, `docs/QUESTIONS.md` | tên team nội bộ (nhiều lần), id team, câu SQL kèm id |
+| `aba2892` | `docs/QUESTIONS.md` | tên team nội bộ |
+| `dd5ee1a` | `docs/progress.md` | địa chỉ Studio cục bộ kèm cổng |
+| `2437706` | `docs/security-review.md` | tên team, id team, tên tác giả commit và tên máy |
+
+Các SHA này nằm trong các nhánh `docs/phase-2-0`, `docs/phase-2-1-provider`, `docs/phase-2-2-sandbox`, `docs/phase-2-3-harness`, `docs/protocol-sync`, `feat/integration` (và `2437706` trong `docs/security-review`, `docs/security-fix-status`), và trong `refs/pull/{3,7,8,9,10,11,13,14}/head`.
+
+Ngoài ra metadata của mọi commit ở cả bốn repo (khoảng 31 commit bundle, 8 mỗi repo còn lại) mang tên tác giả có tên thương hiệu nội bộ và email `...@<tên máy nội bộ>.local`. Dòng này nằm trong hash của commit, chỉ đổi được bằng cách viết lại lịch sử.
+
+### Cách xóa hẳn (owner quyết)
+
+1. Nhẹ nhất: chấp nhận. Tip đã sạch; chuỗi cũ chỉ là tên team, id và cổng cục bộ, không phải token. Giảm rủi ro bằng cách không merge các nhánh trên vào `main` kiểu merge commit (squash để `main` không chứa SHA cũ).
+2. Squash-merge từng PR vào `main` rồi xóa nhánh gốc. Chỉ `main` sạch; SHA cũ vẫn tới được qua `refs/pull/N/head` cho đến khi GitHub dọn.
+3. Đóng PR cũ, xóa nhánh, mở lại từ nhánh mới tạo từ `main` với một commit đã ẩn danh (như #15 thay #3). Lịch sử cũ vẫn truy cập được bằng SHA cho đến khi GitHub thu gom.
+4. Viết lại lịch sử (`git filter-repo --replace-text` và `--mailmap` cho tên/email tác giả) rồi force-push mọi nhánh. Cần owner cho phép riêng; mọi clone và fork phải bỏ đi, PR sẽ phải mở lại.
+5. Nhờ GitHub Support purge: yêu cầu xóa cached views và `refs/pull/*` mồ côi cho các SHA ở trên (cần sau bước 3 hoặc 4, vì GitHub chỉ purge commit không còn ref nào trỏ tới).
+
+Lưu ý: nếu chuỗi coi là nhạy cảm thật thì nên chọn 4 + 5; nếu chỉ là quy ước "không đưa tên nội bộ vào repo public" thì 2 hoặc 3 là đủ.
