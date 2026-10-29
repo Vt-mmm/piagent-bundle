@@ -32,3 +32,13 @@ Mục mở. Làm tiếp phần không bị chặn, hỏi gộp.
 7. **Chờ Studio không giới hạn khi Studio tắt giữa lúc đang stream:** lượt bị cắt phải nhờ retry của Pi (`retry.maxRetries` trong settings của launcher; tạm 3). Studio chập chờn hơn số đó thì lượt lỗi. Có cần provider tự thử lại không (cần bọc thêm, hoặc dừng chấp nhận)?
 8. **Id model trong transcript:** các tin assistant mang id model thật (do stream trong), còn model đang chọn là `agent-watch-auto`, nên Pi coi mỗi lượt là "model khác" và đổi thinking block có chữ ký thành text. Giữ hành vi cũ. Muốn giữ chữ ký thì đặt id model theo route (mất tên cố định).
 9. **Chạy thật trên mini** (Claude run và Codex run qua broker Agent Watch): chưa làm, chờ owner đồng ý trong chat.
+
+## Câu hỏi từ bước 2.3 (harness)
+
+10. **Thêm trường vào `run.state`, `studio.call` (`role`) và kênh `piagent:tools.child` của sandbox** (xem package-contract.md, mục đề xuất 2.3). Không có chúng: harness không biết workflow/capabilities của Studio, settle đi bằng token main, helper review không có tool đọc. Tạm: harness dựng theo đề xuất, test bằng bus giả; đã nhắn hai session kia. Chấp nhận không?
+11. **`helper_slots` mang hai nghĩa.** Broker hiểu nó là số slot song song (`helper-slots` khi >= 2); P0-6 muốn dùng làm số lần gọi helper mỗi vai. Tạm: provider chuyển nó thành `harness.helperLimit` riêng; nếu Studio phát `helper_slots = 2` để nói slot, giới hạn gọi sẽ thành 2. Cần Studio phát trường riêng (ví dụ `helper_calls`)?
+12. **File trạng thái Agent Watch (F117):** giữ `<agent dir>/status/company/<conversation>.json` đúng định dạng `PiagentStatus.swift` (đọc từ agentwatch), ghi vào `PI_CODING_AGENT_DIR` nếu có. Tạm: giữ như plan; test chỉ ghi vào thư mục tạm.
+13. **Gửi báo cáo process mỗi vòng làm tiếp checklist:** bản cũ mở một run Studio cho mỗi vòng; trên Pi 1.3.0 cả lượt chỉ có một run của provider nên chỉ báo cáo vòng cuối đi cùng `close`. Chấp nhận mất báo cáo từng vòng, hay provider mở run mới cho mỗi vòng?
+14. **Team memory một repo mỗi thư mục:** thư mục chứa nhiều repo (F, `findRepositories` bản cũ) chưa chuyển. Làm ở 2.3b hay bỏ?
+15. **Giao diện câu hỏi `ask_user` chỉ ở Terminal:** bề mặt WebUI đã bỏ (dashboard để giai đoạn 3).
+
