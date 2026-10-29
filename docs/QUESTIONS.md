@@ -23,7 +23,7 @@ Mục mở. Làm tiếp phần không bị chặn, hỏi gộp.
 - **P0-6 (số lần gọi helper từ Studio):** thêm trường TÙY CHỌN `helper_slots` ở manifest/grant. Thêm trường không làm hỏng bản cũ; client không thấy trường thì dùng mặc định cũ. Studio chỉ cần phát thêm trường.
 - **F122, F125, F126, F155:** bỏ có chủ đích như đề xuất. **F121 (Herdr):** giữ "phải làm", ưu tiên thấp, làm sau cùng.
 - **Branch protection bắt buộc CI xanh:** bật sau khi CI của repo xanh ổn định hai lần liên tiếp trên PR.
-- **Chạy thật qua Agent Watch/Studio của mini:** chỉ làm ít và nhỏ, với key test không phải VNexus BE; việc nào chưa được owner cho phép riêng thì ghi "chưa kiểm".
+- **Chạy thật qua Agent Watch/Studio của mini:** chỉ làm ít và nhỏ, với key test không phải Team A; việc nào chưa được owner cho phép riêng thì ghi "chưa kiểm".
 
 ## Câu hỏi từ bước 2.1 (provider)
 

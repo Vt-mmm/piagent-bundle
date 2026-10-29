@@ -12,7 +12,7 @@ Cập nhật sau mỗi bước con. Mỗi dòng có bằng chứng (lệnh, kế
 | studio-contract.md, parity.md, baseline | đang làm | |
 | studio-contract.md | viết xong, chờ owner duyệt; chưa chạy thử với broker giả | 1000 dòng, trích file:line; 5 khoảng trống ghi cuối file |
 | parity.md | viết xong, chờ owner duyệt | 141 tính năng; 16 mục I1–I16 chưa chắc làm được trên Pi 1.3.0 (QUESTIONS.md) |
-| baseline-studio-metrics.md | số liệu Studio 14 ngày VNexus BE xong (SELECT chỉ đọc) | 328 run, 1,48% gateway lỗi, 325 disconnect |
+| baseline-studio-metrics.md | số liệu Studio 14 ngày Team A xong (SELECT chỉ đọc) | 328 run, 1,48% gateway lỗi, 325 disconnect |
 | baseline soak lane + A/B của `piagent studio` | CHƯA CHẠY | |
 | CI lần đầu trên 4 repo | xem `gh run list` | |
 | Spike I1 (chặn /model, /login, /share, /bug) | ĐẠT trên Pi 1.3.0 | `python3 docs/spikes/i1-i4/drive.py "/model" "/share"` → cảnh báo "bị chặn trong chế độ công ty" |
