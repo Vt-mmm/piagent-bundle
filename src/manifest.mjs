@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
-export const PI_VERSION = '1.3.0';
+export const PI_VERSION = '1.4.0';
 export const PARTS = ['pi', 'harness', 'sandbox', 'provider'];
 
 // Every entry of the tree counts, not only the contents of regular files: a link (and where it points), a folder (also an empty one), the

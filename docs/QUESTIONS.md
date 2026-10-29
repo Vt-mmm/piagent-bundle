@@ -69,3 +69,11 @@ Mở:
 20. **Hash của phần `pi` bao cả ba package** (package nằm trong `pi/` để Node tìm `@earendil-works/*`). Bộ kiểm hash của Agent Watch (Swift) không cần đổi, nhưng một thay đổi package đổi cả hai hash. Chấp nhận, hay muốn đặt package ngoài `pi/` với liên kết `node_modules` (Swift và `hashDir` bỏ qua symlink nên đổi hướng liên kết không bị bắt)?
 21. **Linux và macOS chỉ có CI chạy e2e;** chưa chạy tay trên Linux thật. Windows chưa có.
 22. **Pin commit:** `bundle.pins.json` ghim commit của ba nhánh `feat/*` (chưa merge). Khi PR của ba repo merge (squash đổi sha), phải ghim lại.
+
+## 2.7 Nâng Pi 1.4.0
+
+23. **P10. Request OpenAI Responses (model GPT/Codex qua `/v1/responses`) khai báo tool trong `input`** (`{"type":"additional_tools","role":"developer","tools":[…]}`), `tools` ở mức trên bị bỏ (pi-ai 1.4.0, `resolveTranscriptTools`). Claude Messages không đổi. Chưa kiểm Studio và upstream thật có nhận hình dạng này không; nếu không, helper/main chạy Codex sẽ lỗi 4xx. Cần một lượt thử với key test (Codex làm main) trước khi phát hành 0.2.0.
+24. **S18 (đã giải). Pi 1.4.0 chạy `rg --no-config`:** `.ripgreprc` của sandbox bị bỏ qua. Sandbox bọc `rg` bằng script thêm glob loại file bí mật (commit `24a9a39`). Lệnh `rg` do model tự chạy qua `bash` vẫn dùng `.ripgreprc`.
+25. **Agent Watch:** bộ dùng tập Pi riêng (`StudioManagedPiRuntime.supportedPiVersions`), nhánh `runtime-pi-launcher-pi14`. Cần đẩy vào agentwatch#18 (hoặc PR riêng) và dựng lại trial zip, nếu không app từ chối bộ 0.2.0.
+26. **Pi 1.4.0 mới ghi trong parity.md/QUESTIONS dưới tên "1.3.0"** ở các mục cũ; giữ nguyên làm lịch sử, mục 2.7 trong progress.md là bản hiện hành.
+

@@ -7,7 +7,7 @@ Cần Node >= 22.19, git, tar, npm và mạng tới registry npm (chỉ lúc d�
 ```bash
 node scripts/build-bundle.mjs --out /đường/dẫn/mới/bundle
 ```
-- Pi 1.3.0 riêng: `npm ci --ignore-scripts` từ `pi-lock/package-lock.json` (không dùng Pi global, không script cài đặt).
+- Pi 1.4.0 riêng: `npm ci --ignore-scripts` từ `pi-lock/package-lock.json` (không dùng Pi global, không script cài đặt).
 - Ba package đúng commit trong `bundle.pins.json`, lấy từ repo công khai (hoặc `--source provider=<clone git>` để dùng bản cục bộ; commit ghim phải có trong clone).
 - Ghi `manifest.json` (sha256 từng phần) rồi chạy `doctor`; thoát 0 khi `ok: true`.
 - Ghim lại sau khi package đổi: `node scripts/pin-heads.mjs provider=<clone> sandbox=<clone> harness=<clone>`, rồi commit `bundle.pins.json`.
@@ -22,7 +22,7 @@ node bin/piagent-bundle-doctor.mjs /đường/dẫn/bundle
 ```bash
 npm run test:e2e
 ```
-Dựng bộ, chạy Pi 1.3.0 thật với ba package, Studio/broker/model giả (cần python3 cho thử `/model`). Cục bộ: đặt `E2E_SOURCE_PROVIDER`, `E2E_SOURCE_SANDBOX`, `E2E_SOURCE_HARNESS` tới clone, hoặc `E2E_BUNDLE` tới bộ đã dựng.
+Dựng bộ, chạy Pi 1.4.0 thật với ba package, Studio/broker/model giả (cần python3 cho thử `/model`). Cục bộ: đặt `E2E_SOURCE_PROVIDER`, `E2E_SOURCE_SANDBOX`, `E2E_SOURCE_HARNESS` tới clone, hoặc `E2E_BUNDLE` tới bộ đã dựng.
 
 ## Môi trường launcher
 `launchPlan` đặt `PI_CODING_AGENT_DIR`, `PI_CODING_AGENT_SESSION_DIR`, `AGENT_WATCH_MANAGED_BINDING`, `PI_OFFLINE=1`, `PI_TELEMETRY=0`, `PI_SKIP_VERSION_CHECK=1`. Launcher khác (Agent Watch) phải đặt đủ; thiếu ba biến cuối thì Pi tự gọi mạng (QUESTIONS I18). `command` là file Node (`<bộ>/pi/bin/pi`): chạy bằng Node đã ghim. PATH tối thiểu `/usr/bin:/bin` đủ cho `--version`.
@@ -54,5 +54,6 @@ Studio trả lỗi kèm lời nhắn cập nhật khi bản bộ thấp hơn m�
 | Bộ | Pi | harness | sandbox | provider | Studio tối thiểu | Agent Watch tối thiểu |
 |---|---|---|---|---|---|---|
 | (chưa phát hành; thử 2.5) | 1.3.0 | `13afcba` | `f1ac85b` | `1b40fa4` | chưa đo | chưa đo |
+| 0.2.0 (chưa phát hành; thử 2.7, tarball chưa publish) | 1.4.0 | `1c4299f` | `24a9a39` | `92c341c` | chưa đo | cần nhánh `runtime-pi-launcher-pi14` (bộ Pi 1.4.0) |
 
 Mỗi release của bộ thêm một dòng. Chỉ owner tag release.

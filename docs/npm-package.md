@@ -1,6 +1,6 @@
 # Gói npm `@piagent/pi-bundle`
 
-Bộ Pi (Pi 1.3.0 riêng + harness + sandbox + provider ở commit ghim) đóng thành **một package npm toàn cục**, cài giống `@piagent/platform`. Agent Watch **không cài** nó: chỉ tìm ở mọi prefix npm và ghim đường dẫn + hash vào binding.
+Bộ Pi (Pi 1.4.0 riêng + harness + sandbox + provider ở commit ghim) đóng thành **một package npm toàn cục**, cài giống `@piagent/platform`. Agent Watch **không cài** nó: chỉ tìm ở mọi prefix npm và ghim đường dẫn + hash vào binding.
 
 ## Cấu trúc sau khi cài
 ```
