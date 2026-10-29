@@ -1,0 +1,30 @@
+{
+  "scenario": "long-node-inventory-platform",
+  "verdict": "smooth",
+  "pass": true,
+  "minutes": 48.1,
+  "phases": "6/6",
+  "stats": {
+    "turns": 7,
+    "toolCalls": 116,
+    "toolErrors": 10,
+    "providerRetries": 0,
+    "compactions": 1,
+    "capacityWaits": 0,
+    "assistantMessages": 110,
+    "nudges": 0,
+    "stalls": 0,
+    "crashes": 0,
+    "restarts": 0,
+    "memberStops": 1,
+    "steers": 1,
+    "questions": 2,
+    "proseAnswers": 0,
+    "approvals": 0,
+    "inputTokens": 267,
+    "outputTokens": 206363,
+    "workspaceActions": 0
+  },
+  "defects": [],
+  "arm": "A"
+}
