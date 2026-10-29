@@ -6,12 +6,12 @@ Bản thử, chưa phát hành. Chỉ dùng **key test**, không dùng key team 
 | File | SHA-256 |
 |---|---|
 | `AgentWatch-pi-trial.zip` (Agent Watch 0.15.17 + launcher `runtime=pi`, agentwatch#18 @ `969e7ed`, universal arm64+x86_64, ký ad-hoc, tắt tự cập nhật) | `e3528f878bdbcfbf20c1df9fee10004752fc62064d074fd2ecb460d861d9e2c2` |
-| `piagent-bundle-0.1.0.zip` (Pi 1.3.0 + harness/sandbox/provider, bản fix/security-* mới nhất) | `118d9bf9e08ed08c2c646fa0eed624e7f8668e68739a6be133ef4efcea841593` |
+| `piagent-bundle-0.1.1.zip` (Pi 1.3.0 + harness/sandbox/provider; giao thành 2 phần `.part-aa`, `.part-ab` ≤ 20 MiB) | `c85c67896d52f0ba96991c7db4e414245907db21a6e9279e38c95bbc85a1b2b9` (phần aa `417311183802e478854d920bb80e051cfb7d634da3c6da5f70f264a4545e5a3d`, ab `876c57f324bcf50dd1210e9d136117344edce01b9c40791dcf42d7e4cd50ba7d`) |
 
-Digest `manifest.json` của bộ (Agent Watch ghim giá trị này): `b19b6ce13d499d64f3538e57c7a3ad55c34e21aea986e9bfbd2a46580647118a`.
-Bộ dựng từ feat/integration + fix/security-bundle (38ad152); provider 48647e2, sandbox 4c57c75, harness b230d89 (đều fix/security-*).
+Digest `manifest.json` của bộ (Agent Watch ghim giá trị này): `96a303e59c4bdff1cf3ae89d88059b2e7cf6fcc7db9f3eb24eb9b5b06a2c9342`.
+Bộ 0.1.1 dựng từ feat/integration + fix/security-bundle (38ad152); provider 5c5c088 (PR #5, đọc lại config theo `configuration_revision`), sandbox d2b2457, harness 80c3890 gộp thêm fix/security-harness b230d89 (commit gộp b6e6f62, chỉ có trong bản dựng). Bản 0.1.0 (provider 48647e2, sandbox 4c57c75, harness b230d89) bị thay thế. App không đổi so với bản đầu (binding đã có `configuration_revision`, ghi lại mỗi lần đồng bộ).
 
-Kiểm file sau khi chép sang: `shasum -a 256 <file>`.
+Ghép phần và kiểm: `cat piagent-bundle-0.1.1.zip.part-aa piagent-bundle-0.1.1.zip.part-ab > piagent-bundle-0.1.1.zip && shasum -a 256 -c sha256.txt` (hai dòng part + dòng zip).
 
 ## 1. Cài Agent Watch bản thử
 ```bash
@@ -27,7 +27,7 @@ xattr -dr com.apple.quarantine /Applications/AgentWatch.app
 ```bash
 D="$HOME/Library/Application Support/AgentWatch/ManagedPi"
 mkdir -p "$D" && rm -rf "$D/bundle"
-ditto -x -k ~/Downloads/piagent-bundle-0.1.0.zip "$D"
+ditto -x -k ~/Downloads/piagent-bundle-0.1.1.zip "$D"
 xattr -dr com.apple.quarantine "$D/bundle"
 node ~/path/to/piagent-bundle/bin/piagent-bundle-doctor.mjs "$D/bundle"   # tuỳ chọn, cần Node ≥ 22.19: phải ra ok: true
 ```
@@ -37,7 +37,7 @@ Kết quả: `.../ManagedPi/bundle/manifest.json` (đúng chỗ app tìm). Dùng
 1. Tạo **key test** trong Studio (bạn tự làm).
 2. Đặt `runtime = pi` cho key đó.
 3. Harness: main → **Codex** (bạn tự đổi).
-4. Bản bộ tối thiểu của key phải ≤ 0.1.0 (hoặc để trống); cao hơn thì Studio trả 426 `bundle_too_old`.
+4. Bản bộ tối thiểu của key phải ≤ 0.1.1 (hoặc để trống); cao hơn thì Studio trả 426 `bundle_too_old`.
 5. Trong Agent Watch nhập key, bấm đồng bộ. Mở bằng nút **Terminal** (không có WebUI với `runtime = pi`).
 
 ## 4. Các bước kiểm
@@ -51,11 +51,16 @@ Kết quả: `.../ManagedPi/bundle/manifest.json` (đúng chỗ app tìm). Dùng
 ```bash
 ps eww -p $(pgrep -f 'pi/bin/pi' | head -1) | tr ' ' '\n' | grep -iE 'key|token|secret|sk-' ; echo "exit=$?"   # mong đợi: không dòng nào, exit=1
 ```
-8. **Bộ quá cũ**: đặt bản bộ tối thiểu của key lên 0.2.0 → mở phải báo tiếng Việt "Bộ Pi … đã quá cũ" kèm "Sửa cài đặt". Đặt lại ≤ 0.1.0.
+8. **Bộ quá cũ**: đặt bản bộ tối thiểu của key lên 0.2.0 → mở phải báo tiếng Việt "Bộ Pi … đã quá cũ" kèm "Sửa cài đặt". Đặt lại ≤ 0.1.1.
 9. Kiểm đường ghi: `ls "$D"` có `agent/`, `ManagedSessions/`, `agent-watch-managed-pi.json`; `~/.pi/agent` không bị đụng bởi `runtime = pi`.
+
+10. **Test lại bản 0.1.1 — (1) đổi Harness giữa hội thoại**: đang có hội thoại, đổi Harness trong Studio (ví dụ main Codex → Claude), chờ Agent Watch đồng bộ (binding đổi `configuration_revision`), gõ tin tiếp: không còn lỗi `managed-grant-invalid`.
+11. **Test lại bản 0.1.1 — (2) lượt chỉ chạy `env`**: trong project không phải git, nhờ agent chạy `env` rồi dừng: cổng hoàn thành không gửi lại bắt chạy `npm test`.
 
 ## Checklist báo lại
 - [ ] sha256 hai file khớp; `doctor` ok
+- [ ] (0.1.1) đổi Harness giữa hội thoại, gõ tiếp: không `managed-grant-invalid`
+- [ ] (0.1.1) lượt chỉ chạy `env`: không bị gửi lại bắt `npm test`
 - [ ] 1 task sửa lỗi có test xanh (Codex làm main)
 - [ ] đổi Claude ↔ Codex giữa hội thoại: ok / lỗi gì
 - [ ] lệch hash: từ chối + đúng thông báo
@@ -65,7 +70,7 @@ ps eww -p $(pgrep -f 'pi/bin/pi' | head -1) | tr ' ' '\n' | grep -iE 'key|token|
 - [ ] `ps eww` không thấy key
 - [ ] bộ quá cũ: thông báo đúng
 - [ ] dòng Pi nhắc "fd/rg not found, Downloading" hoặc lỗi mạng khi mở: có / không
-- [ ] Studio: lượt chạy xuất hiện với runtime=pi, bản bộ 0.1.0
+- [ ] Studio: lượt chạy xuất hiện với runtime=pi, bản bộ 0.1.1
 - Gửi kèm: ảnh/đoạn lỗi, `ls "$D/ManagedSessions"`, giờ xảy ra.
 
 ## Giới hạn đã biết
