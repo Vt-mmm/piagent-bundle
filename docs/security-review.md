@@ -86,7 +86,7 @@ Ngày review: 2026-10-29. Người review: phiên Claude độc lập (chỉ đ�
 
 ### T8. Dữ liệu nội bộ trong repo public
 
-- Cả bốn repo là **PUBLIC** (`gh repo view`). Nhánh `docs/phase-2-0` của piagent-bundle (PR #3, đang mở) chứa `docs/baseline-studio-metrics.md`: tên team "Team A", id team `799f8342-…`, số lượng thành viên hoạt động, số liệu 14 ngày và lược đồ bảng Studio (`gateway_calls`, `memberships`, …) cùng các câu SQL. Quy tắc dự án: không đưa tên khách hàng/dữ liệu thật vào repo public. Metadata commit của cả bốn repo: tác giả `<tÃªn tÃ¡c giáº£> <email mÃ¡y ná»i bá»>` (tên máy nội bộ).
+- Cả bốn repo là **PUBLIC** (`gh repo view`). Nhánh `docs/phase-2-0` của piagent-bundle (PR #3, đang mở) chứa `docs/baseline-studio-metrics.md`: tên team "Team A", id team `799f8342-…`, số lượng thành viên hoạt động, số liệu 14 ngày và lược đồ bảng Studio (`gateway_calls`, `memberships`, …) cùng các câu SQL. Quy tắc dự án: không đưa tên khách hàng/dữ liệu thật vào repo public. Metadata commit của cả bốn repo: tác giả `<tên tác giả> <email máy nội bộ>` (tên máy nội bộ).
 - **Sửa đề xuất:** không merge PR #3 khi chưa ẩn danh (đổi tên team, bỏ id, làm tròn số, bỏ SQL tên bảng); xoá nhánh và đóng PR (GitHub vẫn giữ `refs/pull/3/*`: nhờ GitHub Support xoá cache hoặc coi id team là đã lộ); đặt `user.email` là địa chỉ noreply của GitHub cho các commit sau; để số liệu thật ở `reports/` ngoài repo.
 
 ### T9. Fetch guard: không thấy phần chặn SSRF của `web_fetch`
@@ -115,7 +115,7 @@ Ngày review: 2026-10-29. Người review: phiên Claude độc lập (chỉ đ�
 | 5 | Toolset guard của harness | **Không đạt** | T1: attest tự khai, trùng tên thư mục. `builtin` bị chặn đúng. Tool trùng tên: Pi giữ gói nạp trước; hiện chỉ sandbox đăng ký bảy tool lõi nên thứ tự `-e` trong `launcher.mjs:8` không gây lỗi, nhưng không có test khoá điều đó. |
 | 6 | Bus Pi giả sự kiện | **Không đạt** | T1. |
 | 7 | Chuỗi cung ứng | **Một phần** | L1, T7. |
-| 8 | Lịch sử git không chứa token/.env/địa chỉ nội bộ/tên khách hàng | **Một phần** | gitleaks 8.30.1 (nguồn `github.com/gitleaks/gitleaks/releases/tag/v8.30.1`, `gitleaks_8.30.1_darwin_arm64.tar.gz`, sha256 `b40ab0ae55c505963e365f271a8d3846efbc170aa17f2607f13df610a9aeb6a5` khớp `gitleaks_8.30.1_checksums.txt`) quét mọi ref: provider, harness, bundle 0 phát hiện; sandbox 3 phát hiện là chuỗi giả trong test (`tests/sandbox-start-process.test.mjs:87`, `sandbox-run-on-host.test.mjs:32`, `sandbox-redaction.test.mjs:7`, commit `12694096`). Lệnh grep thêm trên mọi ref (dòng thêm): IP riêng, `.local`, `.internal`, `<tÃªn-ná»i-bá»>`, `/Users/…`: chỉ T8 là thật. |
+| 8 | Lịch sử git không chứa token/.env/địa chỉ nội bộ/tên khách hàng | **Một phần** | gitleaks 8.30.1 (nguồn `github.com/gitleaks/gitleaks/releases/tag/v8.30.1`, `gitleaks_8.30.1_darwin_arm64.tar.gz`, sha256 `b40ab0ae55c505963e365f271a8d3846efbc170aa17f2607f13df610a9aeb6a5` khớp `gitleaks_8.30.1_checksums.txt`) quét mọi ref: provider, harness, bundle 0 phát hiện; sandbox 3 phát hiện là chuỗi giả trong test (`tests/sandbox-start-process.test.mjs:87`, `sandbox-run-on-host.test.mjs:32`, `sandbox-redaction.test.mjs:7`, commit `12694096`). Lệnh grep thêm trên mọi ref (dòng thêm): IP riêng, `.local`, `.internal`, `<tên-nội-bộ>`, `/Users/…`: chỉ T8 là thật. |
 | 9 | Log/báo cáo gửi Studio | **Một phần** | T5. `call-purpose` chỉ gửi tên tool và nhãn mục đích (đúng), nhưng có `X-Agent-Task`; tool-failures gửi đầu ra lỗi. |
 
 ## Đối chiếu bảng vector của threat model
@@ -155,7 +155,7 @@ Mọi script nằm ngoài repo (scratchpad của phiên review) và chỉ dùng 
 
 ## Thông tin nội bộ trong lịch sử
 
-Cập nhật 2026-10-29. Quét `git grep -iE` vá»i danh sÃ¡ch chuá»i ná»i bá» (tÃªn team, tÃªn tÃ¡c giáº£, cá»ng Studio cá»¥c bá», ÄÆ°á»ng dáº«n home, tÃªn tá» chá»©c) trên mọi nhánh remote của bốn repo, cộng nội dung title/body của mọi PR (`gh pr view --json body`).
+Cập nhật 2026-10-29. Quét `git grep -iE` với danh sách chuỗi nội bộ (tên team, tên tác giả, cổng Studio cục bộ, đường dẫn home, tên tổ chức) trên mọi nhánh remote của bốn repo, cộng nội dung title/body của mọi PR (`gh pr view --json body`).
 
 ### Kết quả theo nhánh/PR
 
@@ -185,7 +185,7 @@ Title và body của mọi PR ở cả bốn repo không chứa chuỗi nào. M�
 
 Các SHA này nằm trong các nhánh `docs/phase-2-0`, `docs/phase-2-1-provider`, `docs/phase-2-2-sandbox`, `docs/phase-2-3-harness`, `docs/protocol-sync`, `feat/integration` (và `2437706` trong `docs/security-review`, `docs/security-fix-status`), và trong `refs/pull/{3,7,8,9,10,11,13,14}/head`.
 
-Ngoài ra metadata của mọi commit ở cả bốn repo (khoảng 31 commit bundle, 8 mỗi repo còn lại) mang tên tác giả có chữ tÃªn thÆ°Æ¡ng hiá»u ná»i bá» và email `...@<tên máy nội bộ>.local`. Dòng này nằm trong hash của commit, chỉ đổi được bằng cách viết lại lịch sử.
+Ngoài ra metadata của mọi commit ở cả bốn repo (khoảng 31 commit bundle, 8 mỗi repo còn lại) mang tên tác giả có tên thương hiệu nội bộ và email `...@<tên máy nội bộ>.local`. Dòng này nằm trong hash của commit, chỉ đổi được bằng cách viết lại lịch sử.
 
 ### Cách xóa hẳn (owner quyết)
 
