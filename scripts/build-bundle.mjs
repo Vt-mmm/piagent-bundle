@@ -78,7 +78,24 @@ function checkPackage(name, manifest) {
   if (problems.length) throw new Error(`${PACKAGES[name]}: ${problems.join('; ')}`);
 }
 
-export function buildBundle({ out, pins, sources = {}, bundleVersion }) {
+// A tree that survives `npm pack` and a global install unchanged: npm drops symbolic links (here only node_modules/.bin, which nothing
+// of the bundle uses: bin/pi starts Pi's cli.js directly) drops .npmignore/.gitignore files and normalises modes to 755/644, so the manifest is hashed after both.
+// Files `npm pack` never ships, whatever the package asks for.
+const NPM_DROPS = new Set(['.npmignore', '.gitignore', '.npmrc', '.DS_Store']);
+export function makePortable(dir) {
+  const walk = current => {
+    for (const name of fs.readdirSync(current)) {
+      const full = path.join(current, name), stat = fs.lstatSync(full);
+      if (stat.isSymbolicLink()) { if (path.basename(current) !== '.bin') throw new Error(`unexpected link ${full}`); fs.unlinkSync(full); }
+      else if (stat.isDirectory()) { walk(full); if (path.basename(full) === '.bin' && !fs.readdirSync(full).length) fs.rmdirSync(full); else fs.chmodSync(full, 0o755); }
+      else if (stat.isFile() && NPM_DROPS.has(name)) fs.unlinkSync(full);
+      else if (stat.isFile()) fs.chmodSync(full, stat.mode & 0o111 ? 0o755 : 0o644);
+    }
+  };
+  walk(dir);
+}
+
+export function buildBundle({ out, pins, sources = {}, bundleVersion, portable = false }) {
   if (fs.existsSync(out) && fs.readdirSync(out).length) throw new Error(`${out} is not empty`);
   const pinned = JSON.parse(fs.readFileSync(pins, 'utf8'));
   if (pinned.pi !== PI_VERSION) throw new Error(`pins name Pi ${pinned.pi}, the bundle supports ${PI_VERSION}`);
@@ -103,6 +120,7 @@ export function buildBundle({ out, pins, sources = {}, bundleVersion }) {
       parts[name] = { version: manifest.version, path: packagePath(name), dir: dest, commit: pin.commit };
     } finally { fs.rmSync(scratch, { recursive: true, force: true }); }
   }
+  if (portable) makePortable(out);
   const manifest = buildManifest({ bundleVersion, parts });
   fs.writeFileSync(path.join(out, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
   return { manifest, doctor: doctor(out) };

@@ -1,0 +1,50 @@
+name: publish-npm
+
+# Manual and tag-driven: a published version cannot be taken back. Never on a branch push.
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build and pack without publishing"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22.19.0"
+          registry-url: "https://registry.npmjs.org"
+      - run: npm ci --ignore-scripts
+      - run: npm test
+      - name: Tag matches the package version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          tag="${GITHUB_REF#refs/tags/v}"
+          pkg="$(node -p "require('./package.json').version")"
+          if [ "$tag" != "$pkg" ]; then echo "tag v$tag does not match package.json version $pkg" >&2; exit 1; fi
+      - name: Build the package
+        run: node scripts/build-npm-package.mjs --out "$RUNNER_TEMP/pkg" --bundle-version "$(node -p "require('./package.json').version")"
+      - name: Install into a temporary prefix and check
+        run: |
+          npm install --global --ignore-scripts --prefix "$RUNNER_TEMP/prefix" "$RUNNER_TEMP"/pkg/piagent-pi-bundle-*.tgz
+          "$RUNNER_TEMP/prefix/bin/piagent-pi-bundle" doctor
+      - name: Publish
+        if: startsWith(github.ref, 'refs/tags/') && inputs.dry_run != true
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          tag=latest; if [[ "$version" == *-* ]]; then tag=next; fi
+          npm publish "$RUNNER_TEMP"/pkg/piagent-pi-bundle-*.tgz --provenance --access public --tag "$tag"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
