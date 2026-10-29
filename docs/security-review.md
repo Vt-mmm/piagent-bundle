@@ -185,7 +185,7 @@ Title và body của mọi PR ở cả bốn repo không chứa chuỗi nào. M�
 
 Các SHA này nằm trong các nhánh `docs/phase-2-0`, `docs/phase-2-1-provider`, `docs/phase-2-2-sandbox`, `docs/phase-2-3-harness`, `docs/protocol-sync`, `feat/integration` (và `2437706` trong `docs/security-review`, `docs/security-fix-status`), và trong `refs/pull/{3,7,8,9,10,11,13,14}/head`.
 
-Ngoài ra metadata của mọi commit ở cả bốn repo (khoảng 31 commit bundle, 8 mỗi repo còn lại) mang tên tác giả có chữ "VNexus" và email `...@<tên máy nội bộ>.local`. Dòng này nằm trong hash của commit, chỉ đổi được bằng cách viết lại lịch sử.
+Ngoài ra metadata của mọi commit ở cả bốn repo (khoảng 31 commit bundle, 8 mỗi repo còn lại) mang tên tác giả có chữ tÃªn thÆ°Æ¡ng hiá»u ná»i bá» và email `...@<tên máy nội bộ>.local`. Dòng này nằm trong hash của commit, chỉ đổi được bằng cách viết lại lịch sử.
 
 ### Cách xóa hẳn (owner quyết)
 
