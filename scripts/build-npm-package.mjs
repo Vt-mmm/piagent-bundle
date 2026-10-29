@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Builds the global npm package @piagent/pi-bundle: the portable bundle (Pi 1.3.0 plus the three packages at the commits of
+// Builds the global npm package @piagent/pi-bundle: the portable bundle (Pi 1.4.0 plus the three packages at the commits of
 // bundle.pins.json, manifest.json with a sha256 per part) under bundle/, the piagent-pi-bundle command, and a tarball from `npm pack`.
 //
 //   node scripts/build-npm-package.mjs --out <dir> [--bundle-version 0.1.1] [--source provider=<git clone>] ...
@@ -32,9 +32,9 @@ for (const file of ['doctor.mjs', 'manifest.mjs']) fs.copyFileSync(path.join(rep
 fs.copyFileSync(path.join(repo, 'bin/piagent-pi-bundle.mjs'), path.join(pkg, 'bin/piagent-pi-bundle.mjs'));
 fs.chmodSync(path.join(pkg, 'bin/piagent-pi-bundle.mjs'), 0o755);
 for (const file of ['LICENSE', 'SECURITY.md']) fs.copyFileSync(path.join(repo, file), path.join(pkg, file));
-fs.writeFileSync(path.join(pkg, 'README.md'), `# @piagent/pi-bundle\n\nPi 1.3.0 plus the Piagent harness, sandbox and provider packages, pinned by sha256 in bundle/manifest.json. Used by Agent Watch for \`runtime = pi\`.\n\n    npm install --global @piagent/pi-bundle\n    piagent-pi-bundle doctor\n    piagent-pi-bundle update | repair\n\nNo install scripts. Agent Watch finds it under any npm prefix and pins the manifest digest.\n`);
+fs.writeFileSync(path.join(pkg, 'README.md'), `# @piagent/pi-bundle\n\nPi 1.4.0 plus the Piagent harness, sandbox and provider packages, pinned by sha256 in bundle/manifest.json. Used by Agent Watch for \`runtime = pi\`.\n\n    npm install --global @piagent/pi-bundle\n    piagent-pi-bundle doctor\n    piagent-pi-bundle update | repair\n\nNo install scripts. Agent Watch finds it under any npm prefix and pins the manifest digest.\n`);
 fs.writeFileSync(path.join(pkg, 'package.json'), `${JSON.stringify({
-  name: '@piagent/pi-bundle', version: bundleVersion, description: 'Pi 1.3.0 with the Piagent company-mode packages, pinned by hash (Agent Watch runtime = pi)',
+  name: '@piagent/pi-bundle', version: bundleVersion, description: 'Pi 1.4.0 with the Piagent company-mode packages, pinned by hash (Agent Watch runtime = pi)',
   type: 'module', license: 'MIT', bin: { 'piagent-pi-bundle': 'bin/piagent-pi-bundle.mjs' }, engines: { node: '>=22.19' },
   files: ['bin', 'src', 'bundle', 'LICENSE', 'SECURITY.md', 'README.md'], publishConfig: { access: 'public', provenance: true },
   repository: { type: 'git', url: 'git+https://github.com/Vt-mmm/piagent-bundle.git' },

@@ -27,7 +27,7 @@ test('bin/pi is the file launchPlan runs, it is the bundle\'s own Pi, and it nee
   try {
     const out = spawnSync(process.execPath, [plan.command, '--version'], { encoding: 'utf8', env: { PATH: '/usr/bin:/bin', HOME: home, PI_CODING_AGENT_DIR: path.join(home, 'agent'), ...plan.env } });
     assert.equal(out.status, 0, out.stderr);
-    assert.equal(out.stdout.trim(), '1.3.0');
+    assert.equal(out.stdout.trim(), '1.4.0');
   } finally { fs.rmSync(home, { recursive: true, force: true }); }
   for (const arg of plan.args.filter(a => a.startsWith('/'))) assert.ok(arg.startsWith(root + path.sep), `${arg} is inside the bundle`);
 });

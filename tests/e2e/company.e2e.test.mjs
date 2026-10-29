@@ -1,4 +1,4 @@
-// Company mode end to end: the bundle's own Pi 1.3.0 with harness, sandbox and provider loaded exactly as launchPlan
+// Company mode end to end: the bundle's own Pi 1.4.0 with harness, sandbox and provider loaded exactly as launchPlan
 // says, a simulated Studio and broker, and a scripted model that fixes a failing test. Offline; no real credential,
 // Studio, model, Keychain or ~/.pi is touched.
 import test from 'node:test';
@@ -32,9 +32,9 @@ const reviewScript = () => [
 const toolNames = body => (body.tools ?? []).map(t => t.name).sort();
 
 
-test('bundle: the pinned parts verify and Pi is the bundle\'s own 1.3.0', () => {
+test('bundle: the pinned parts verify and Pi is the bundle\'s own 1.4.0', () => {
   const { root, manifest } = theBundle();
-  assert.equal(manifest.piVersion, '1.3.0');
+  assert.equal(manifest.piVersion, '1.4.0');
   assert.ok(fs.existsSync(path.join(root, manifest.parts.pi.path, 'bin/pi')));
   for (const name of ['harness', 'sandbox', 'provider']) assert.match(manifest.parts[name].commit, /^[0-9a-f]{40}$/, name);
 });
@@ -137,6 +137,27 @@ test('(f) /model, /login, /scoped-models, /share and /bug are refused in the Ter
   assert.match(out.stdout, /Only one model in scope/, 'Ctrl+P has no second model to cycle to');
   assert.match(out.stdout, /agent-watch-auto/, 'the one company model is selected');
   assert.doesNotMatch(rig.everything([out.stdout, out.stderr, JSON.stringify(rig.studio.managed)]), TOKEN);
+});
+
+test('(h) Shift+Tab cycles thinking in the real Terminal, but never leaves the levels Studio allows', { skip: !hasPython, timeout: 150_000 }, async t => {
+  const probeFile = path.join(fs.realpathSync(os.tmpdir()), `e2e-think-${process.pid}.json`);
+  t.after(() => fs.rmSync(probeFile, { force: true }));
+  const rig = await startRig(t, { scripts: {}, append: [PROBE], env: { E2E_PROBE: probeFile } });
+  const spec = JSON.stringify({ cmd: [process.execPath, rig.plan.command, ...rig.args], cwd: rig.project, env: rig.env });
+  const out = await new Promise(resolve => {
+    const child = spawn('python3', ['-I', DRIVER, spec, '@shifttab', '@shifttab', '@shifttab', '@shifttab', '@shifttab', '@shifttab'], { stdio: ['ignore', 'pipe', 'pipe'] });
+    let stdout = '', stderr = '';
+    const timer = setTimeout(() => child.kill('SIGKILL'), 120_000);
+    child.stdout.on('data', c => { stdout += c; }); child.stderr.on('data', c => { stderr += c; });
+    child.on('close', status => { clearTimeout(timer); resolve({ status, stdout, stderr }); });
+  });
+  assert.equal(out.status, 0, out.stderr);
+  const record = JSON.parse(fs.readFileSync(probeFile, 'utf8'));
+  const allowed = rig.studioManifest.thinking_levels;
+  assert.ok(record.thinking.length >= 4, `Pi announced the picks: ${JSON.stringify(record.thinking)}`);
+  assert.ok(record.thinking.some(pick => !allowed.includes(pick.asked)), 'Shift+Tab did reach a level Studio does not allow');
+  for (const pick of record.thinking) assert.ok(allowed.includes(pick.after), `held ${pick.after} after asking ${pick.asked}`);
+  assert.doesNotMatch(rig.everything([out.stdout, out.stderr]), TOKEN);
 });
 
 test('(g) Pi itself refuses a second extension that registers bash at load time, so the sandbox is never half-replaced', { timeout: 60_000 }, async t => {

@@ -7,7 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const file = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'bundle.pins.json');
-const pins = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : { pi: '1.3.0', packages: {} };
+const pins = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : { pi: '1.4.0', packages: {} };
 for (const arg of process.argv.slice(2)) {
   const [name, dir] = arg.split('=');
   const head = spawnSync('git', ['-C', dir, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).stdout.trim();

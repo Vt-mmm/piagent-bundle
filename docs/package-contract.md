@@ -23,7 +23,7 @@ Bản này thay các bản nháp ở 2.1 (provider), 2.2 (sandbox) và 2.3 (harn
 | `piagent:tools.child.close` | harness → sandbox | `{ v, key }` — bỏ boundary của helper. Harness phát khi helper đóng và khi helper không khởi động được (từ 2.5; trước đó boundary rò). |
 | `piagent:tools.blocked` | harness → mọi bên | `{ v, bad: [{ name, found }] }` khi 7 tool lõi không đến từ sandbox. |
 
-## 2. Thứ tự nạp và thời điểm (đo trên Pi 1.3.0 thật, 2.5)
+## 2. Thứ tự nạp và thời điểm (đo trên Pi 1.3.0 thật ở 2.5, chạy lại trên Pi 1.4.0 ở 2.7: không đổi)
 
 Bộ nạp theo thứ tự `harness`, `sandbox`, `provider` (`launchPlan`; Agent Watch dùng cùng thứ tự). Handler cùng sự kiện chạy theo thứ tự nạp. Hệ quả đã sửa và là một phần của hợp đồng:
 
@@ -39,18 +39,19 @@ Quy tắc kiểm `sourceInfo`: nạp bằng `-e <thư mục>` cho `{ path: <file
 - **Binding.** Launcher đặt `AGENT_WATCH_MANAGED_BINDING=<file>` (Agent Watch `runtime = pi` ghi `agent-watch-managed-pi.json`; test của provider dùng `PIAGENT_BINDING`, thắng khi cả hai có). Không có biến nào thì provider đọc `~/.pi/agent/agent-watch-managed.json` (chỉ đọc; chỉ cho cài Pi gốc kiểu cũ). Binding của runtime `pi` không có `model`; nếu có phải là `agent-watch-auto`. Provider không bao giờ ghi binding.
 - **Agent dir.** Launcher đặt `PI_CODING_AGENT_DIR` và `PI_CODING_AGENT_SESSION_DIR` riêng, và `settings.json` có `enabledModels: ["studio/agent-watch-auto"]`, `retry.maxRetries` (`prepareAgentDir`). Provider chỉ hoàn lại model khác bằng `model_select` nếu settings thiếu.
 - **Môi trường.** Ngoài ba biến trên, `launchPlan.env` đặt `PI_OFFLINE=1`, `PI_TELEMETRY=0`, `PI_SKIP_VERSION_CHECK=1`: Pi không tự gọi mạng (telemetry cài đặt, kiểm bản mới trên pi.dev, làm mới catalog); chỉ Studio qua provider. Launcher nào tự dựng env (Agent Watch) phải đặt đủ.
-- **Bố cục bộ** (`scripts/build-bundle.mjs`): `manifest.json`; `pi/` là một project npm (`package.json` + `package-lock.json` ghim Pi 1.3.0, `npm ci --ignore-scripts`) với `bin/pi` (file Node nạp `dist/bundle/cli.js` của Pi trong `pi/node_modules`); ba package ở `pi/packages/piagent-{harness,sandbox,provider}`. Package nằm trong `pi/` vì chúng nạp `@earendil-works/*` bằng `import()` thường mà Pi không đặt bí danh cho; Node tìm được chúng nhờ `pi/node_modules` là tổ tiên. Hệ quả: hash của phần `pi` bao cả ba package (thêm một lớp kiểm), và mỗi package vẫn có hash riêng. Package không có `dependencies` và không có script cài đặt (build từ chối).
+- **Bố cục bộ** (`scripts/build-bundle.mjs`): `manifest.json`; `pi/` là một project npm (`package.json` + `package-lock.json` ghim Pi 1.4.0, `npm ci --ignore-scripts`) với `bin/pi` (file Node nạp `dist/bundle/cli.js` của Pi trong `pi/node_modules`); ba package ở `pi/packages/piagent-{harness,sandbox,provider}`. Package nằm trong `pi/` vì chúng nạp `@earendil-works/*` bằng `import()` thường mà Pi không đặt bí danh cho; Node tìm được chúng nhờ `pi/node_modules` là tổ tiên. Hệ quả: hash của phần `pi` bao cả ba package (thêm một lớp kiểm), và mỗi package vẫn có hash riêng. Package không có `dependencies` và không có script cài đặt (build từ chối).
 - **Launch plan.** `command = <pi>/bin/pi` (file Node; người gọi chạy bằng Node đã ghim), `args = --no-extensions -e harness -e sandbox -e provider -e builtin:mcp`.
 
 ## 4. Kiểm hợp đồng
 
 - Từng package: test bus giả của chính nó (`tests/bus.test.mjs` ở provider, `tests/sandbox-child-tools.test.mjs`, `tests/harness-review-helper.test.mjs`...).
-- Cả ba cùng nhau trên Pi 1.3.0 thật: `piagent-bundle/tests/e2e/company.e2e.test.mjs` (probe ghi lại bus và `sourceInfo`), kiểm payload gửi Studio bằng `tests/e2e/helpers/contract.mjs` (luật trong `studio-contract.md` mục 3.4 và 5; có test riêng `tests/e2e-contract.test.mjs`).
+- Cả ba cùng nhau trên Pi 1.4.0 thật (1.3.0 ở 2.5): `piagent-bundle/tests/e2e/company.e2e.test.mjs` (probe ghi lại bus và `sourceInfo`), kiểm payload gửi Studio bằng `tests/e2e/helpers/contract.mjs` (luật trong `studio-contract.md` mục 3.4 và 5; có test riêng `tests/e2e-contract.test.mjs`).
 
 ## 5. Ma trận version
 
 | bundle | provider | harness | sandbox | bus |
 |---|---|---|---|---|
-| 0.x (2.5, `bundle.pins.json`) | `feat/provider` ở commit đã ghim | `feat/harness` ở commit đã ghim | `feat/sandbox` ở commit đã ghim | v1 (bản này) |
+| 0.x (2.5, Pi 1.3.0) | `feat/provider` ở commit đã ghim | `feat/harness` ở commit đã ghim | `feat/sandbox` ở commit đã ghim | v1 (bản này) |
+| 0.2.0 (2.7, Pi 1.4.0, `bundle.pins.json`) | `92c341c` | `1c4299f` | `24a9a39` | v1 (không đổi) |
 
 Thay đổi sau này ghi ở đây kèm ma trận version.
