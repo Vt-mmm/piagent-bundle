@@ -42,6 +42,8 @@ export class E2EStudio {
 
   async handle(req, res) {
     const url = new URL(req.url, this.origin), chunks = [];
+    // An outage: every Studio route drops the connection (the /__test routes are the rig's own wiring and stay up).
+    if (this.outage && !url.pathname.startsWith('/__test/')) { this.refused = (this.refused ?? 0) + 1; req.socket.destroy(); return; }
     for await (const chunk of req) chunks.push(chunk);
     const raw = Buffer.concat(chunks).toString('utf8'), token = /^Bearer (.+)$/.exec(req.headers.authorization ?? '')?.[1] ?? req.headers['x-api-key'];
     res.setHeader('x-studio-boot', this.boot); res.setHeader('x-studio-version', this.version); res.setHeader('x-request-id', randomUUID());
