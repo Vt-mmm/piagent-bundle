@@ -1,11 +1,11 @@
-# Baseline Agent Studio — team "VNexus BE" (14 ngày)
+# Baseline Agent Studio — team "Team A" (14 ngày)
 
 Thu thập ngày 2026-10-29, chỉ đọc (read-only). Cửa sổ: 2026-10-15 11:40 UTC đến 2026-10-29 11:40 UTC. Ngày trong bảng theo múi giờ Asia/Ho_Chi_Minh (UTC+7).
 
 ## Phạm vi và cách thu thập
 
 - Nguồn: Postgres của Compose project `agent-studio-mini` (container `agent-studio-mini-postgres-1`, DB `studio`), truy vấn `SELECT` trong `BEGIN READ ONLY` + `SET default_transaction_read_only=on`, qua `docker exec ... psql -U postgres` trên socket cục bộ. Không đọc `.env`, `secrets/`, key hay token; không gọi HTTP API của Studio; không ghi dữ liệu.
-- Team: `teams.name = 'VNexus BE'` (id `799f8342-2b69-410e-b954-686f3c950301`, 4 thành viên đang hoạt động; 5 người có membership chồng lên cửa sổ).
+- Team: `teams.name = 'Team A'` (id `<team-id>`, 4 thành viên đang hoạt động; 5 người có membership chồng lên cửa sổ).
 - Gán sự kiện về team: `gateway_calls`, `tool_failures`, `client_disconnects` không có cột `team_id`, nên gán theo `user_id` có membership của team **tại thời điểm xảy ra sự kiện** (`memberships.started_at <= t < ended_at`). `managed_runs` có `team_id` nên lọc trực tiếp.
 - Chỉ số tổng hợp, không có nội dung prompt, `input`/`error` của tool_failures, tên máy, tên thành viên hay khách hàng.
 - Đơn vị "turn": báo cáo quy trình (`managed_runs.process`, migration 028) được client gửi theo **run**, nên "tỷ lệ verified" tính theo run, không theo từng lượt chat.
@@ -392,7 +392,7 @@ Chạy bằng `docker exec -i agent-studio-mini-postgres-1 psql -U postgres -d s
 ```sql
 BEGIN READ ONLY;
 SET default_transaction_read_only=on;
-SELECT '799f8342-2b69-410e-b954-686f3c950301' AS team, to_char(date_trunc('minute',now())-interval '14 days','YYYY-MM-DD HH24:MI:SS+00') AS since, to_char(date_trunc('minute',now()),'YYYY-MM-DD HH24:MI:SS+00') AS until \gset
+SELECT '<team-id>' AS team, to_char(date_trunc('minute',now())-interval '14 days','YYYY-MM-DD HH24:MI:SS+00') AS since, to_char(date_trunc('minute',now()),'YYYY-MM-DD HH24:MI:SS+00') AS until \gset
 \set m 'SELECT DISTINCT m.user_id FROM memberships m WHERE m.team_id=:\'team\' AND m.started_at<:\'until\' AND (m.ended_at IS NULL OR m.ended_at>:\'since\')'
 \echo ## A0 tong quan
 SELECT count(*) calls, count(*) FILTER(WHERE status<400) ok, count(*) FILTER(WHERE status>=400) err, count(DISTINCT user_id) members_active, round(avg(duration_ms)) avg_ms, percentile_disc(0.5) WITHIN GROUP(ORDER BY first_byte_ms) p50_fb_ms, percentile_disc(0.95) WITHIN GROUP(ORDER BY first_byte_ms) p95_fb_ms FROM gateway_calls g WHERE g.received_at>=:'since' AND g.received_at<:'until' AND EXISTS(SELECT 1 FROM memberships mm WHERE mm.user_id=g.user_id AND mm.team_id=:'team' AND mm.started_at<=g.received_at AND (mm.ended_at IS NULL OR mm.ended_at>g.received_at));
