@@ -4,7 +4,7 @@ Release bundle for Piagent company mode: pinned Pi, three packages, manifest has
 
 Part of the Piagent company-mode bundle for stock [Pi](https://github.com/earendil-works) (pinned: `@earendil-works/pi-coding-agent` 1.3.0). See `piagent-bundle/docs` for the plan, contracts and runbook.
 
-Status: skeleton (phase 2.0). Not usable yet.
+Status: phase 2.5. `scripts/build-bundle.mjs` builds a bundle (its own Pi 1.3.0 + the three packages at the commits in `bundle.pins.json` + `manifest.json`); `tests/e2e` runs it end to end against a simulated Studio. Not released.
 
 ## Development
 

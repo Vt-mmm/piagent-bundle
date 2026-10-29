@@ -2,4 +2,15 @@
 
 Bản sửa lỗi hoặc bảo mật phát hiện ở `managed/` trong giai đoạn 2 (không thêm tính năng vào `managed/`). Mỗi dòng: phát hiện, file, package đích, trạng thái.
 
-(chưa có)
+- `managed/workflow.mjs`: `verified` chấm theo exit code, nên `npm test | tail` có test fail vẫn tính pass; `isCheckCommand` tính `pytest -k x` và `tsc --version` là check; vòng sửa của verify và review dùng chung một số đếm. Đã sửa ngay khi chuyển sang `piagent-harness/src/{checks,workflow}.mjs` (P0-1, P0-2, P0-5), không sửa trong `managed/`. Trạng thái: sửa ở package đích.
+- `managed/helper-roles.mjs`: `HELPER_CALLS = 8` viết cứng; harness mới lấy từ Studio (mặc định 8). Trạng thái: sửa ở package đích.
+- Chưa phát hiện lỗi bảo mật nào khác trong các module đã chuyển.
+| # | Phát hiện ở `managed/` (đọc khi port 2.2) | File | Package đích | Trạng thái |
+|---|---|---|---|---|
+| 1 | `stopStrays`/`stopBackground` tìm process lạc bằng `ps -E` đọc biến môi trường; macOS không cho đọc môi trường của binary Apple (`sleep`, `sh`…), nên `nohup sleep 300 &` không bị dừng khi hết lượt. Test dùng `node` thay `sleep`. | `tool-boundary.mjs:485` | sandbox | giữ nguyên hành vi; cần quyết có theo dõi cây process theo cha (như `descendants()` của `background-process.mjs`) cho cả lệnh thường không |
+| 2 | Seatbelt `network-outbound (remote ip "localhost:*")` cho lệnh tới mọi cổng loopback VÀ địa chỉ riêng của chính máy (IP LAN của máy mini): service nghe `0.0.0.0` trên máy truy cập được từ sandbox. Đã ghi trong comment cũ ("a server it starts is reachable") nhưng không ghi hệ quả với service có sẵn. | `tool-boundary.mjs:101` | sandbox | giữ nguyên; ghi ở README "Known limits" |
+| 3 | `/undo` cũ lưu lịch sử bền (store theo hội thoại, git adapter chạy trong worker); bản mới giữ trong bộ nhớ tiến trình và thư mục tạm, mất khi tắt Pi. Đổi vì Pi không có store riêng. | `checkpoints.mjs`, `runtime/checkpoints/*` | sandbox | khác hành vi, chờ owner (QUESTIONS 12) |
+| 4 | `run_on_host` ở Bypass chỉ hỏi push/PR/publish/deploy/credential; plan (113) và parity F024 nói hỏi mỗi lần. Bản mới hỏi mỗi lần ở mọi mode. | `command-tools.mjs:183` | sandbox | đổi theo plan |
+| 5 | `handoffReason`/`mustConfirm` dựa `policy-core.js`, `base-policy.json` (`requireConfirmationPatterns`, `externalActionPolicy`) và `guard-shell-analysis.ts`; không port được nguyên (thuộc extension cá nhân). Bản mới là bộ đọc shell nhỏ (`shell-words.mjs`) + danh sách riêng. Bộ test cũ (`handoff-policy.test.mjs`) qua hết; các mẫu chỉ có trong JSON chính sách (ví dụ `prompt-git-add-broad`, động từ ghi của tool cloud lạ) có thể lọt. | `runtime/policy/handoff-policy.mjs` | sandbox | cần review bảo mật trước khi coi là tương đương |
+| 6 | Worker của `tool-worker.mjs` đọc `HOME/.pi/agent/bin` để tìm `rg`/`fd` (đường của Pi 0.87); trên Pi 1.3.0 thư mục agent là `PI_CODING_AGENT_DIR`. Bản mới đặt biến này vào thư mục tạm của sandbox. | `tool-worker.mjs:46` | sandbox | đã sửa ở bản mới |
+| 7 | `ensureSearchTools` gọi downloader của Pi từ ngoài sandbox để lấy `rg`/`fd`; trên Pi 1.3.0 `tools-manager` của Pi làm việc này và sandbox không tải được. Bản mới chỉ dùng binary đã cài, thiếu thì dùng tìm kiếm tích hợp. | `toolchain.mjs:76` | sandbox | đã sửa ở bản mới |
