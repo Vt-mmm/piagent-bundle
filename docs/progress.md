@@ -13,3 +13,4 @@ Cập nhật sau mỗi bước con. Mỗi dòng có bằng chứng (lệnh, kế
 | piagent-bundle: manifest sha256, kiểm hash, doctor, launch plan | xong phần logic, test offline | `npm test` 6 pass (hash lệch → `hash-mismatch:sandbox`; plan chỉ chứa đường dẫn bộ; env agent dir riêng). Chưa đóng gói Pi thật, chưa chạy trên mini. |
 | runbook.md | bản nháp | các bước chưa kiểm trên máy thật |
 | 2.4a agent-studio, 2.4b agentwatch | CHƯA KHỞI ĐỘNG: chờ owner Trust repository | |
+| Quét secret/IP lịch sử git (4 repo, tạm thời, 29/10) | chưa có gitleaks; grep regex | `git log --all -p \| grep -E 'gho_…\|sk-…\|as_run_…\|AKIA…\|PRIVATE KEY\|IP riêng'` → chỉ trùng chuỗi phiên bản trong package-lock (false positive). Chạy lại gitleaks trước release. |
