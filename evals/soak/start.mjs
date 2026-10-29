@@ -30,12 +30,19 @@ if (a.arm === 'A') {
   fs.copyFileSync(source, path.join(agentDir, 'binding.json'));
   fs.chmodSync(path.join(agentDir, 'binding.json'), 0o600);
   const { prepareAgentDir } = await import('../../src/launcher.mjs');
-  prepareAgentDir(agentDir);
+  const settings = prepareAgentDir(agentDir);
+  if (a.reserve) { // lower Pi's compaction point: it summarises when the window has less than `reserve` tokens left
+    const json = JSON.parse(fs.readFileSync(settings, 'utf8'));
+    json.compaction = { ...json.compaction, reserveTokens: Number(a.reserve) };
+    fs.writeFileSync(settings, `${JSON.stringify(json, null, 2)}\n`, { mode: 0o600 });
+  }
   const pkg = n => path.join(bundle, 'pi', 'packages', `piagent-${n}`);
   arm = {
+    // The flags and environment Agent Watch's launcher (agentwatch#18) builds, plus HOME: without HOME a bash tool call hung
+    // in a hand run (docs/baseline.md).
     argv: [path.join(NODE, 'node'), path.join(bundle, 'pi', 'bin', 'pi'), '--no-extensions', '--no-approve', '--no-skills', '--no-prompt-templates', '--offline',
-      '-e', pkg('harness'), '-e', pkg('sandbox'), '-e', pkg('provider'), '--mode', 'rpc'],
-    env: { ...base, PI_CODING_AGENT_SESSION_DIR: sessionDir, AGENT_WATCH_MANAGED_BINDING: path.join(agentDir, 'binding.json'), PI_OFFLINE: '1', PI_TELEMETRY: '0', PI_SKIP_VERSION_CHECK: '1' },
+      '-e', pkg('harness'), '-e', pkg('sandbox'), '-e', pkg('provider'), '-e', 'builtin:mcp', '--mode', 'rpc'],
+    env: { PATH: '/usr/bin:/bin', TERM: 'xterm-256color', LANG: 'en_US.UTF-8', HOME: os.homedir(), PI_CODING_AGENT_DIR: agentDir, PI_CODING_AGENT_SESSION_DIR: sessionDir, AGENT_WATCH_MANAGED_BINDING: path.join(agentDir, 'binding.json'), PI_OFFLINE: '1', PI_TELEMETRY: '0', PI_SKIP_VERSION_CHECK: '1' },
   };
 }
 const child = spawn(path.join(NODE, 'node'), [path.join(process.env.LANE, 'long-task-soak-v1', 'runner.mjs'), '--surface', 'terminal', '--scenario', a.scenario ?? 'long-node-inventory-platform', '--work-root', path.join(a.work, 'soak')],

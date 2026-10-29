@@ -62,3 +62,42 @@ Kết luận và giới hạn:
 - **Studio-link chờ khi bị gián đoạn chưa kiểm**: không có Studio giả để cắt, và không được tắt Studio dùng chung. Restart cứng chỉ chứng minh mở lại hội thoại, không chứng minh chờ Studio cập nhật.
 - Không có provider retry hay capacity wait nào xảy ra ở cả hai bên.
 - Ghi chú: Piagent 1.47.0 (A) vẫn ghi file trạng thái nhỏ (tiêu đề, tên project, trạng thái) vào `~/.pi/agent/status/company/` của Pi gốc dù đã đặt `PI_CODING_AGENT_DIR` riêng; 23 file ngày 29/10 20:18–20:44 (giờ máy) là từ lần chạy của A. B không ghi vào đó.
+
+## 4. A/B bổ sung: 4 task khó hơn (29/10, chiều)
+
+Phương pháp như mục 2, thêm: chạy qua `--rpc`/`--mode rpc` để trả lời xin duyệt (luôn "cho phép") và ghi từng yêu cầu (`eval_approval`). Task: h1 sửa lỗi + commit + `git push` lên remote cục bộ (xin duyệt chạy lệnh ngoài sandbox), h2 hai lệnh Checks kèm luật lint ở `AGENTS.md`, h3 helper dùng chung (sửa naive làm hỏng hiển thị), h4 cài module mới theo đặc tả (lane `standard`). 4 task × 3 lần × 2 bên = 24 run. Lưu ý: Studio tự chọn model theo Harness, ở các run này cả 24 đều là `claude-sonnet-5-5` (khác 36 run đầu). Chạy song song với soak nên số giây dao động hơn.
+
+pairs: 12  (tasks: 4)
+| metric | A mean | B mean | B - A | 95% CI (bootstrap) | Wilcoxon p |
+|---|---|---|---|---|---|
+| pass | 0.83 | 1 | 0.17 | [0, 0.42] | 0.500 |
+| verified (system report) | 1 | 1 | 0 | [0, 0] | 1.000 |
+| model calls | 6.33 | 6.42 | 0.08 | [-0.83, 1.17] | 1.000 |
+| harness rounds | 0 | 0 | 0 | [0, 0] | 1.000 |
+| tool calls | 7.08 | 7.50 | 0.42 | [-0.75, 1.58] | 0.535 |
+| seconds | 68.46 | 50.92 | -17.54 | [-33.11, -4.37] | 0.042 |
+| cost USD | 0.18 | 0.06 | -0.12 | [-0.13, -0.12] | 0.000 |
+| approvals asked | 0.25 | 0.33 | 0.08 | [0, 0.25] | 1.000 |
+
+| task | A pass | B pass | A calls | B calls | A s | B s | A cost | B cost |
+|---|---|---|---|---|---|---|---|---|
+| h1-push-approval | 3/3 | 3/3 | 7.67 | 10 | 39.30 | 46.33 | 0.18 | 0.07 |
+| h2-lint-gate | 3/3 | 3/3 | 6 | 5.33 | 33.80 | 27.23 | 0.17 | 0.05 |
+| h3-coupled | 1/3 | 3/3 | 4.67 | 4.33 | 65.43 | 23.20 | 0.17 | 0.05 |
+| h4-feature | 3/3 | 3/3 | 7 | 6 | 135.30 | 106.90 | 0.21 | 0.07 |
+
+
+Đọc kết quả:
+- **Cơ chế đã được kích hoạt thật, ở cả hai bên**: xin duyệt (h1: A 3/3 run xin 1 lần; B 1–2 lần, đều được cho phép và push lên được), vòng sửa (`fixLoops` ≥ 1: A 3 run, B 2 run), lane `standard` (h4). Không run nào đủ lớn để `reviewLoops` > 0: chính sách của key này là `review = off` (báo cáo quy trình), nên **review helper không thể được kiểm bằng key này**. `harness rounds` (làm tiếp checklist) vẫn bằng 0 ở mọi run.
+- **Không tệ hơn**: pass B 12/12, A 10/12; chênh pass +0,17, CI [0, 0,42], Wilcoxon p = 0,5 (mẫu nhỏ, không kết luận khác biệt). Model calls không khác (+0,08, CI chứa 0). Thời gian B nhanh hơn (−17,5 s, CI [−33,1, −4,4]) và rẻ hơn (~$0,06 so với ~$0,18).
+- Hai lần A "trượt" ở h3 là A **thêm** một test mới vào `tests/directory.test.js` (không sửa hay làm yếu test cũ). Theo luật đã đặt trước (bất kỳ thay đổi nào trong `tests/` đều trượt) vẫn tính trượt; nếu chỉ cấm làm yếu test thì A là 12/12. B không đụng `tests/` ở 12/12 run.
+- Còn thiếu: review helper (key `review = off`), `harness rounds`/làm tiếp checklist, Codex/vendor.
+
+## 5. Cổng đóng đủ của việc F (29/10, chiều)
+
+| Việc | Kết quả | Bằng chứng |
+|---|---|---|
+| Compaction trên runtime mới + plan còn nguyên | ĐẠT | soak dài, `reserveTokens` hạ xuống 900000 (compaction ở ~100k token): event `compaction` lý do `threshold` lúc phút 19; hội thoại có `agent-watch-plan-kept` chứa nguyên plan 3 bước đang dở (đúng chữ, đúng trạng thái), plan được cập nhật tiếp sau đó |
+| Studio-link chờ khi Studio giả tắt ≥ 2 phút giữa lượt | ĐẠT | `E2E_LONG=1 node --test tests/e2e/studio-disconnect.e2e.test.mjs` (155 s): Studio giả tắt 125,0 s, 8 kết nối bị từ chối, lượt vẫn xong (exit 0, file sửa còn nguyên); log có `studio_wait` rồi một `studio_disconnect` (`cause: network`, `outcome: resumed`, 8 lần thử, chờ 151,4 s, code `studio-unreachable`); Studio giả nhận 1 sự kiện ở `POST /studio/v1/managed/disconnects`. Chờ dài hơn lúc tắt ~26 s vì khoảng nghỉ giữa các lần thử tăng dần tới 30 s |
+| Shift+Tab hoàn mức thinking | ĐẠT (có điều kiện nói rõ) | `tests/e2e/thinking-shift-tab.e2e.test.mjs` (pty, 2 test): Harness cho đúng một mức (`low`) → mỗi lần Pi đổi sang `medium`, provider log `thinking_reverted` và đưa về `low`; khi Harness cho nhiều mức thì mức bị đưa về mức trước đó nếu còn hợp lệ, không thì mức gần nhất hợp lệ: nghĩa là không bắt buộc về đúng một mức nếu Harness cho nhiều mức |
+| Launcher argv/env của agentwatch#18 | CÓ MỘT LỆCH | soak dùng đúng cờ + biến của PR đó (`--no-approve --no-skills --no-prompt-templates --offline`, `-e builtin:mcp`, PATH `/usr/bin:/bin`, `PI_OFFLINE/TELEMETRY/SKIP_VERSION_CHECK`) nhưng **thêm `HOME`**: khi chạy tay với `env -i` không có HOME, một lệnh gọi tool `bash` treo (không ra gì trong 75 s, lặp lại), còn prompt không dùng tool thì chạy được. Chưa tìm ra nguyên nhân (`os.homedir()` có fallback). Cần kiểm lại với launcher Swift thật |

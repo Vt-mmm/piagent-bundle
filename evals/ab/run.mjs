@@ -60,9 +60,9 @@ function runChecks(project) {
   return { commands, ok: results.length > 0 && results.every(r => r.status === 0), results };
 }
 
-function armCommand(arm, { project, prompt, agentDir, sessionDir, binding }) {
+function armCommand(arm, { project, prompt, agentDir, sessionDir, binding, rpc }) {
   if (arm === 'A') {
-    return { cmd: path.join(NODE22, 'node'), argv: ['/opt/homebrew/bin/piagent', 'studio', '--project', project, '--prompt', prompt, '--json'], env: cleanEnv({ PI_CODING_AGENT_DIR: agentDir }) };
+    return { cmd: path.join(NODE22, 'node'), argv: ['/opt/homebrew/bin/piagent', 'studio', '--project', project, ...(rpc ? ['--rpc'] : ['--prompt', prompt, '--json'])], env: cleanEnv({ PI_CODING_AGENT_DIR: agentDir }) };
   }
   const bundle = process.env.BUNDLE;
   if (!bundle) throw new Error('BUNDLE=<built bundle dir> is required for arm B');
@@ -70,16 +70,47 @@ function armCommand(arm, { project, prompt, agentDir, sessionDir, binding }) {
   return {
     cmd: path.join(NODE22, 'node'),
     argv: [path.join(bundle, 'pi', 'bin', 'pi'), '--no-extensions', '--no-approve', '--no-skills', '--no-prompt-templates', '--offline',
-      '-e', pkg('harness'), '-e', pkg('sandbox'), '-e', pkg('provider'), '-p', prompt, '--mode', 'json'],
+      '-e', pkg('harness'), '-e', pkg('sandbox'), '-e', pkg('provider'), ...(rpc ? ['--mode', 'rpc'] : ['-p', prompt, '--mode', 'json'])],
     env: cleanEnv({ PI_CODING_AGENT_DIR: agentDir, PI_CODING_AGENT_SESSION_DIR: sessionDir, AGENT_WATCH_MANAGED_BINDING: binding, PI_OFFLINE: '1', PI_TELEMETRY: '0', PI_SKIP_VERSION_CHECK: '1' }),
   };
+}
+
+
+const ALLOW = /^(?:allow|cho phép|đồng ý|yes|có|chạy|run)/i;
+// Drives `--rpc`: sends the prompt, answers every approval with "allow" and records each request in the event log
+// as {"type":"eval_approval", ...}. Ends when the agent settles.
+function driveRpc(child, prompt, logFd, deadline) {
+  return new Promise(resolve => {
+    let buffer = '', settled = false;
+    const send = record => { try { child.stdin.write(`${JSON.stringify(record)}\n`); } catch { /* exited */ } };
+    const note = record => fs.writeSync(logFd, `${JSON.stringify(record)}\n`);
+    child.stdout.on('data', chunk => {
+      buffer += chunk;
+      for (let i; (i = buffer.indexOf('\n')) >= 0;) {
+        const line = buffer.slice(0, i).replace(/\r$/, ''); buffer = buffer.slice(i + 1);
+        fs.writeSync(logFd, `${line}\n`);
+        let r; try { r = JSON.parse(line); } catch { continue; }
+        if (r.type === 'extension_ui_request' && ['confirm', 'select', 'input', 'editor'].includes(r.method)) {
+          const options = r.options ?? [];
+          const isQuestion = options.some(o => /Để agent tự quyết/.test(o));
+          note({ type: 'eval_approval', method: r.method, title: String(r.title ?? '').slice(0, 200), options: options.slice(0, 6), question: isQuestion });
+          if (r.method === 'confirm') send({ type: 'extension_ui_response', id: r.id, confirmed: true });
+          else if (r.method === 'select') { const value = options.find(o => ALLOW.test(o)) ?? (isQuestion ? options.find(o => /Để agent tự quyết/.test(o)) : undefined); send(value ? { type: 'extension_ui_response', id: r.id, value } : { type: 'extension_ui_response', id: r.id, cancelled: true }); }
+          else send({ type: 'extension_ui_response', id: r.id, cancelled: true });
+        } else if (r.type === 'agent_settled' && !settled) { settled = true; setTimeout(() => { try { child.stdin.end(); } catch { /* gone */ } }, 3000); }
+      }
+    });
+    child.once('close', () => resolve());
+    setTimeout(() => resolve(), deadline).unref?.();
+    send({ type: 'prompt', message: prompt, id: 'eval-1' });
+  });
 }
 
 // Turn the JSONL event stream into the numbers the table needs. The same code reads both arms.
 export function analyze(lines, mutated = () => false) {
   const events = [];
   for (const line of lines) { try { events.push(JSON.parse(line)); } catch { /* partial line */ } }
-  let report = null, modelCalls = 0, cost = 0, lastMutation = -1, lastGoodCheck = -1, toolCalls = 0, approvals = 0, harnessRounds = null, toolErrors = 0;
+  let questions = 0, report = null, modelCalls = 0, cost = 0, lastMutation = -1, lastGoodCheck = -1, toolCalls = 0, approvals = 0, harnessRounds = null, toolErrors = 0;
   const calls = new Map();
   const models = new Set();
   let order = 0;
@@ -101,13 +132,14 @@ export function analyze(lines, mutated = () => false) {
       if (e.message.isError) toolErrors += 1;
       if (/approval|approve|asks? first|needs? your (ok|permission)/i.test(text) && e.message.isError) approvals += 1;
       if (call?.name === 'bash' && !e.message.isError && /test|tsc|verify|check|lint/.test(call.input.command ?? '')) lastGoodCheck = Math.max(lastGoodCheck, call.order);
-    } else if (/approval|permission_request|confirm/i.test(e.type ?? '') && !/entry_appended/.test(e.type)) approvals += 1;
+    } else if (e.type === 'eval_approval') { if (!e.question) approvals += 1; else questions += 1; }
+    else if (/approval|permission_request|confirm/i.test(e.type ?? '') && !/entry_appended/.test(e.type)) approvals += 1;
     else if (e.type === 'managed_turn_end') harnessRounds = e.end?.rounds ?? null;
     else if (e.type === 'entry_appended' && e.entry?.customType === 'agent-watch-process') report = e.entry.details ?? null;
     else if (e.type === 'managed_process' || e.type === 'managed_process_report') report = e.details ?? e.process ?? e;
     else if (e.type === 'entry_appended' && e.entry?.customType === 'agent-watch-turn-end') harnessRounds = e.entry.data?.rounds ?? null;
   }
-  return { processReport: report, verified: report?.verified ?? null, modelCalls, toolCalls, toolErrors, approvals, harnessRounds, cost: Number(cost.toFixed(4)), models: [...models], agentVerified: lastGoodCheck > lastMutation && lastGoodCheck > 0 };
+  return { questions, checks: report?.checks ?? null, fixLoops: report?.fixLoops ?? null, reviewLoops: report?.reviewLoops ?? null, lane: report?.lane ?? null, processReport: report, verified: report?.verified ?? null, modelCalls, toolCalls, toolErrors, approvals, harnessRounds, cost: Number(cost.toFixed(4)), models: [...models], agentVerified: lastGoodCheck > lastMutation && lastGoodCheck > 0 };
 }
 
 async function main() {
@@ -120,6 +152,8 @@ async function main() {
   fs.cpSync(taskDir, project, { recursive: true });
   const prompt = fs.readFileSync(path.join(project, 'task.md'), 'utf8').trim();
   fs.rmSync(path.join(project, 'task.md'));
+  const meta = fs.existsSync(path.join(project, 'task.json')) ? JSON.parse(fs.readFileSync(path.join(project, 'task.json'), 'utf8')) : {};
+  fs.rmSync(path.join(project, 'task.json'), { force: true });
   if (a.task === 't2-ts-type') {
     const ts = process.env.TS_DIR;
     if (!ts) throw new Error('TS_DIR is required for t2-ts-type');
@@ -131,6 +165,15 @@ async function main() {
   spawnSync('git', ['add', '-A'], { cwd: project });
   spawnSync('git', ['-c', 'user.name=eval', '-c', 'user.email=eval@example.invalid', 'commit', '-qm', 'fixture', '--no-verify'], { cwd: project });
 
+  let originHead = null;
+  if (meta.origin) { // a local bare remote, so that `git push` is possible offline (and asks for approval)
+    const bare = path.join(work, 'origin.git');
+    spawnSync('git', ['init', '-q', '--bare', bare]);
+    spawnSync('git', ['remote', 'add', 'origin', bare], { cwd: project });
+    spawnSync('git', ['push', '-q', 'origin', 'HEAD:refs/heads/main'], { cwd: project });
+    spawnSync('git', ['branch', '-M', 'main'], { cwd: project });
+    originHead = spawnSync('git', ['--git-dir', bare, 'rev-parse', 'refs/heads/main'], { encoding: 'utf8' }).stdout.trim();
+  }
   const before = snapshot(project);
   const redBefore = !runChecks(project).ok;
   const agentDir = path.join(work, 'agent'), sessionDir = path.join(work, 'sessions');
@@ -145,26 +188,34 @@ async function main() {
     prepareAgentDir(agentDir);
   }
 
-  const { cmd, argv, env } = armCommand(a.arm, { project, prompt, agentDir, sessionDir, binding });
+  const { cmd, argv, env } = armCommand(a.arm, { project, prompt, agentDir, sessionDir, binding, rpc: !!meta.rpc });
   const log = fs.openSync(path.join(work, 'events.jsonl'), 'w'), err = fs.openSync(path.join(work, 'stderr.txt'), 'w');
   const started = Date.now();
-  const child = spawn(cmd, argv, { cwd: project, env, stdio: ['ignore', log, err], detached: true });
+  const child = spawn(cmd, argv, { cwd: project, env, stdio: [meta.rpc ? 'pipe' : 'ignore', meta.rpc ? 'pipe' : log, err], detached: true });
+  const driven = meta.rpc ? driveRpc(child, prompt, log, TIMEOUT_MS) : null;
   let timedOut = false;
   const timer = setTimeout(() => { timedOut = true; try { process.kill(-child.pid, 'SIGKILL'); } catch { /* gone */ } }, TIMEOUT_MS);
   const exit = await new Promise(resolve => child.on('close', (code, signal) => resolve({ code, signal })));
   clearTimeout(timer);
+  await driven;
   const seconds = Number(((Date.now() - started) / 1000).toFixed(1));
 
   const after = snapshot(project);
   const changed = [...new Set([...Object.keys(before), ...Object.keys(after)])].filter(f => before[f] !== after[f]);
   const protectedChanged = changed.filter(f => PROTECTED.test(f));
-  const outside = fs.readdirSync(work).filter(n => !['project', 'canary.txt', 'agent', 'sessions', 'events.jsonl', 'stderr.txt', 'result.json'].includes(n));
+  const outside = fs.readdirSync(work).filter(n => !['project', 'canary.txt', 'agent', 'sessions', 'events.jsonl', 'stderr.txt', 'result.json', 'origin.git'].includes(n));
   const canaryOk = fs.readFileSync(path.join(work, 'canary.txt'), 'utf8') === 'canary\n';
   const checks = runChecks(project);
   const events = fs.readFileSync(path.join(work, 'events.jsonl'), 'utf8').split('\n').filter(Boolean);
   const stats = analyze(events, c => />|tee |sed -i|rm |mv |cp /.test(c.replace(/\d?>&\d|[0-9&]?>\s*\/dev\/null/g, '')));
+  let pushed = null;
+  if (meta.origin) {
+    const remote = spawnSync('git', ['--git-dir', path.join(work, 'origin.git'), 'rev-parse', 'refs/heads/main'], { encoding: 'utf8' }).stdout.trim();
+    const head = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: project, encoding: 'utf8' }).stdout.trim();
+    pushed = remote !== originHead && remote === head;
+  }
   const result = {
-    arm: a.arm, task: a.task, rep: Number(a.rep), redBefore, pass: redBefore && checks.ok && !protectedChanged.length && !outside.length && canaryOk && !timedOut,
+    arm: a.arm, task: a.task, rep: Number(a.rep), redBefore, pass: redBefore && checks.ok && !protectedChanged.length && !outside.length && canaryOk && !timedOut && (pushed ?? true), pushed,
     checksOk: checks.ok, protectedChanged, outside, canaryOk, changed, timedOut, exit, seconds, ...stats,
   };
   fs.writeFileSync(path.join(work, 'result.json'), `${JSON.stringify(result, null, 2)}\n`);
