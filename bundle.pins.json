@@ -3,15 +3,15 @@
   "packages": {
     "provider": {
       "repository": "https://github.com/Vt-mmm/piagent-provider.git",
-      "commit": "1b40fa4741dbde99d6b9f63d749baf909c6be148"
+      "commit": "5c5c08875e42a9b6b4eb9309a4c77ba1b3828b94"
     },
     "sandbox": {
       "repository": "https://github.com/Vt-mmm/piagent-sandbox.git",
-      "commit": "f1ac85b9b8a43cb40d3058b0cae52ed28ee74665"
+      "commit": "d2b2457fd728072e35bab925851922d8c8127430"
     },
     "harness": {
       "repository": "https://github.com/Vt-mmm/piagent-harness.git",
-      "commit": "13afcba0d376b4097d143518929693b193e57e0a"
+      "commit": "b6e6f62383f37ab6c354d5ec75534feeafa520aa"
     }
   }
 }

@@ -29,15 +29,18 @@ Dựng bộ, chạy Pi 1.3.0 thật với ba package, Studio/broker/model giả 
 
 ## Bật cho một team
 1. Trong Studio đặt `runtime = pi` cho **một key test** trước (không phải key của team thật). Chờ PR agent-studio (trường `runtime`) được owner merge và deploy.
-2. Trên máy member, Agent Watch bản có launcher mới phải đã cài bộ (Pi riêng + 3 package). Chạy `node bin/piagent-bundle-doctor.mjs <thư mục bộ>`: phải trả `ok: true`.
+2. Trên máy member: `npm install --global @piagent/pi-bundle` (package npm toàn cục, xem `npm-package.md`) và Agent Watch bản có launcher mới. Chạy `piagent-pi-bundle doctor`: phải trả `ok: true`. Agent Watch tự tìm bộ ở mọi prefix npm (nvm, fnm, volta, asdf, mise, npm-global...) và ghim đường dẫn + hash.
 3. Mở một task nhỏ có test; kiểm trạng thái và log (mục dưới).
 4. Đặt `runtime = pi` cho team. Theo dõi chỉ số Studio tách theo runtime (gateway_calls lỗi, tool_failures, disconnects, tỷ lệ verified) so với baseline ở `baseline-studio-metrics.md`.
+
+## Cập nhật bộ
+`piagent-pi-bundle update`; sau đó mở lại Agent Watch (đồng bộ ghim lại hash mới). Rollback bộ: `npm install --global @piagent/pi-bundle@<bản trước>`.
 
 ## Rollback
 Đặt `runtime = piagent` ở key hoặc team trong Studio. Lần mở sau của member dùng launcher cũ; hội thoại cũ vốn vẫn mở bằng bản cũ. Không cần cài lại gì. (Chưa kiểm trên máy thật.)
 
 ## Sửa cài đặt (hash lệch)
-Agent Watch từ chối mở khi `doctor` báo `hash-mismatch:<phần>`, `absent:<phần>` hoặc `manifest-missing`. Dùng "Sửa cài đặt" (cài lại bộ đúng bản đã pin). Không sửa tay file trong thư mục bộ.
+Agent Watch từ chối mở khi `doctor` báo `hash-mismatch:<phần>`, `absent:<phần>` hoặc `manifest-missing`. Dùng "Sửa cài đặt" trong Agent Watch, hoặc chạy `piagent-pi-bundle repair` (= `npm install --global --force @piagent/pi-bundle@<bản đang có>`). Không sửa tay file trong thư mục bộ.
 
 ## Đọc log khi member báo lỗi
 - Log local: `ManagedSessions/<hash>/` (cùng chỗ với bản cũ).
@@ -45,7 +48,7 @@ Agent Watch từ chối mở khi `doctor` báo `hash-mismatch:<phần>`, `absent
 - Không có nội dung prompt trong log; secret đã được che.
 
 ## Bộ bị từ chối vì quá cũ
-Studio trả lỗi kèm lời nhắn cập nhật khi bản bộ thấp hơn mức tối thiểu của team. Cài bản bộ mới (Sửa cài đặt hoặc cập nhật Agent Watch), kiểm `doctor`, mở lại. Muốn tạm cho chạy tiếp: hạ bản bộ tối thiểu hoặc gạt `runtime = piagent`.
+Studio trả lỗi kèm lời nhắn cập nhật khi bản bộ thấp hơn mức tối thiểu của team. Cài bản bộ mới (`piagent-pi-bundle update`, hoặc Sửa cài đặt), kiểm `doctor`, mở lại. Muốn tạm cho chạy tiếp: hạ bản bộ tối thiểu hoặc gạt `runtime = piagent`.
 
 ## Ma trận version
 | Bộ | Pi | harness | sandbox | provider | Studio tối thiểu | Agent Watch tối thiểu |
