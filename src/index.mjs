@@ -1,2 +1,4 @@
-// piagent-bundle entry point (skeleton). Implementation lands in phase 2.N.
-export default function piagentExtension() {}
+export { buildManifest, verifyManifest, hashDir, PI_VERSION, PARTS } from './manifest.mjs';
+export { launchPlan } from './launcher.mjs';
+export { doctor } from './doctor.mjs';
+export default function piagentBundle() {}
