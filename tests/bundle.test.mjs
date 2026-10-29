@@ -44,9 +44,12 @@ test('launch plan uses only bundle paths and its own agent dirs', () => {
   const { root, manifest } = fixture();
   const plan = launchPlan({ root, manifest, agentDir: '/a/agent', sessionDir: '/a/ManagedSessions' });
   assert.equal(plan.command, path.join(root, 'pi', 'bin', 'pi'));
-  assert.deepEqual(plan.args.slice(0, 2), ['--no-extensions', '-e']);
+  // T6: nothing from the project loads or runs on its own, and Pi stays off the network.
+  for (const flag of ['--no-extensions', '--no-approve', '--no-skills', '--no-prompt-templates', '--offline']) assert.ok(plan.args.includes(flag), flag);
+  assert.ok(plan.args.indexOf('--no-approve') < plan.args.indexOf('-e'), 'switches come before the packages');
+  assert.deepEqual(plan.args.filter(a => a === '-e').length, 4);
   assert.equal(plan.args.at(-1), 'builtin:mcp');
   assert.equal(plan.args.filter(a => a === '-e').length, 4);
-  assert.deepEqual(plan.env, { PI_CODING_AGENT_DIR: '/a/agent', PI_CODING_AGENT_SESSION_DIR: '/a/ManagedSessions' });
+  assert.deepEqual(plan.env, { PI_CODING_AGENT_DIR: '/a/agent', PI_CODING_AGENT_SESSION_DIR: '/a/ManagedSessions', PI_OFFLINE: '1', PI_TELEMETRY: '0', PI_SKIP_VERSION_CHECK: '1' });
   assert.ok(!JSON.stringify(plan).includes('as_run_'));
 });
