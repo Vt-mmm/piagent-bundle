@@ -12,7 +12,8 @@ Cập nhật sau mỗi bước con. Mỗi dòng có bằng chứng (lệnh, kế
 
 | piagent-bundle: manifest sha256, kiểm hash, doctor, launch plan | xong phần logic, test offline | `npm test` 6 pass (hash lệch → `hash-mismatch:sandbox`; plan chỉ chứa đường dẫn bộ; env agent dir riêng). Chưa đóng gói Pi thật, chưa chạy trên mini. |
 | runbook.md | bản nháp | các bước chưa kiểm trên máy thật |
-| 2.4a agent-studio, 2.4b agentwatch | CHƯA KHỞI ĐỘNG: chờ owner Trust repository | |
+| 2.4b agentwatch (macOS) | PR mở, chưa merge: https://github.com/Vt-mmm/agentwatch/pull/18 | `swift test` 371 test, 0 lỗi; 8 test mới: đường piagent trùng snapshot trước thay đổi, hash lệch không mở, key không vào tiến trình Pi. Windows chưa làm (không có dotnet). Cần chốt với harness: biến `AGENT_WATCH_MANAGED_BINDING`. |
+| 2.4a agent-studio | xem session p2-studio | |
 | Quét secret/IP lịch sử git (4 repo, tạm thời, 29/10) | chưa có gitleaks; grep regex | `git log --all -p \| grep -E 'gho_…\|sk-…\|as_run_…\|AKIA…\|PRIVATE KEY\|IP riêng'` → chỉ trùng chuỗi phiên bản trong package-lock (false positive). Chạy lại gitleaks trước release. |
 | studio-contract.md, parity.md, baseline | đang làm | |
 | studio-contract.md | viết xong, chờ owner duyệt; chưa chạy thử với broker giả | 1000 dòng, trích file:line; 5 khoảng trống ghi cuối file |
