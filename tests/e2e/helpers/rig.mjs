@@ -50,9 +50,9 @@ export async function startRig(t, options = {}) {
   const { root, manifest } = theBundle();
   const dir = real(fs.mkdtempSync(path.join(os.tmpdir(), 'e2e-rig-')));
   const studio = await new E2EStudio({ scripts: options.scripts ?? {} }).listen();
-  const studioManifest = manifestFor(studio.origin, { workflow: options.workflow, extra: options.extra });
+  const studioManifest = manifestFor(studio.origin, { workflow: options.workflow, extra: options.extra, thinkingLevels: options.thinkingLevels });
   const broker = path.join(dir, 'broker.mjs');
-  fs.writeFileSync(broker, brokerProgram(studio.origin, studioManifest), { mode: 0o700 });
+  fs.writeFileSync(broker, brokerProgram(studio.origin, studioManifest, options.effort), { mode: 0o700 });
   const bindingPath = path.join(dir, 'agent-watch-managed-pi.json');
   fs.writeFileSync(bindingPath, JSON.stringify({ schema_version: 1, runtime: 'pi', profile_id: 'd'.repeat(64), origin: studio.origin, broker }));
   const agentDir = path.join(dir, 'agent'), sessionDir = path.join(dir, 'ManagedSessions'), home = path.join(dir, 'home'), project = path.join(dir, 'project');

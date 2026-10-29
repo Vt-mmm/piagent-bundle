@@ -22,6 +22,8 @@ def screen(raw): return ANSI.sub(b'', raw).decode('utf8', 'replace')
 
 print('== initial'); print(screen(pump(6)))
 for command in sys.argv[2:]:
+    if command == '@S-Tab':  # Shift+Tab (back-tab), the key Pi cycles the thinking level with
+        os.write(fd, b'\x1b[Z'); print('== key', command); print(screen(pump(1.5))); continue
     if command.startswith('^'):  # a control key, e.g. ^P is Ctrl+P
         os.write(fd, bytes([ord(command[1]) - 64])); print('== key', command); print(screen(pump(1.5))); continue
     os.write(fd, command.encode()); pump(1.5)
