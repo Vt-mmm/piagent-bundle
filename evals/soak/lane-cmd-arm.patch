@@ -1,0 +1,15 @@
+--- /Users/vtmm/Documents/Deploy/piagent-harness-lane/evals/long-task-soak-v1/surfaces/terminal-rpc.mjs	2026-10-28 19:32:50
++++ surfaces/terminal-rpc.mjs	2026-10-29 20:22:40
+@@ -31,7 +31,11 @@
+   }
+ 
+   async #spawn() {
+-    const child = spawn(this.piagent, ['studio', '--rpc', '--project', this.project], { env: piagentEnv(), stdio: ['pipe', 'pipe', 'pipe'] });
++    // SOAK_ARM_JSON={argv:[…], env:{…}} replaces the stock command (used to drive the Pi bundle as well as `piagent studio`).
++    const arm = process.env.SOAK_ARM_JSON ? JSON.parse(process.env.SOAK_ARM_JSON) : null;
++    const child = arm
++      ? spawn(arm.argv[0], [...arm.argv.slice(1).map(a => a.replaceAll('{project}', this.project))], { env: arm.env, cwd: this.project, stdio: ['pipe', 'pipe', 'pipe'] })
++      : spawn(this.piagent, ['studio', '--rpc', '--project', this.project], { env: piagentEnv(), stdio: ['pipe', 'pipe', 'pipe'] });
+     this.child = child; this.pending = new Map(); this.closing = false; this.stderr = '';
+     let buffer = Buffer.alloc(0);
+     child.stdout.on('data', chunk => {
