@@ -130,3 +130,27 @@ Chưa làm/chưa kiểm (nói thẳng):
 - `launchPlan` chưa được Agent Watch (Swift, agentwatch#18) dùng thật: PR đó dựng argv/env riêng và đang thiếu `PI_OFFLINE`, `PI_TELEMETRY=0`, `PI_SKIP_VERSION_CHECK=1` (QUESTIONS I18). Chưa kiểm hash của Swift với bộ dựng ở đây (hai bên cùng thuật toán, nhưng chưa chạy Swift trên bộ thật).
 - `pi -p` không in gì sau lượt có cổng hoàn tất (QUESTIONS I19).
 - Chưa đo A/B với baseline 2.0.
+
+## 2.6 Eval A/B và soak (branch `feat/eval`, 29/10)
+
+Chạy thật qua broker Agent Watch của mini (binding thật chỉ đọc, bản sao trong agent dir tạm); số liệu và phương pháp đầy đủ ở `docs/baseline.md`. Bộ B dựng bằng `node scripts/build-bundle.mjs --out <tmp> --pins <pins ở head fix/security-*> --source …`, `doctor.ok: true`.
+
+| Việc | Trạng thái | Bằng chứng |
+|---|---|---|
+| Bộ 6 task A/B offline | xong | `evals/ab/tasks/`; lỗi logic, TypeScript, Checks trong `## Checks`, bẫy sửa test, async, CSV. Lỗi fixture t6 tìm ra ở lần chạy đầu và đã sửa. |
+| A/B 3 lần × 6 task × 2 bên (36 run, cùng model) | xong | `node evals/ab/batch.mjs --out <dir> --reps 3`, `node evals/ab/stats.mjs`: pass 18/18 cả hai; model calls B−A = +0,17 (CI −0,50…1,06); thời gian −6,6 s (CI −10,8…−0,8); cost $0,05 vs $0,16. Kết luận: không tệ hơn. Task quá dễ: 0 xin duyệt, 0 vòng sửa của harness. |
+| Soak A (piagent studio) | xong | smooth, 6/6 phase, 48,1 phút, 1 compaction |
+| Soak B (runtime mới) | xong | smooth, 6/6 phase, 72,7 phút, restart cứng làm tiếp được; 0 compaction |
+
+Chưa kiểm (nói thẳng): soak chỉ ~1–1,2 giờ chứ chưa nhiều giờ; compaction của runtime mới chưa chạy; studio-link chờ khi Studio gián đoạn chưa kiểm; cổng hoàn tất, review helper, xin duyệt chưa bị A/B kích hoạt; Codex/vendor không chạy (Harness của key này chỉ route Claude); mỗi cấu hình một mẫu soak; chưa chạy trên Linux/Windows. Cách chạy lại: `evals/README.md`.
+
+### 2.6b Việc F bổ sung (29/10 chiều)
+
+| Việc | Trạng thái | Bằng chứng |
+|---|---|---|
+| Dọn status của Piagent cũ | xong | `~/.pi/agent/status/company/` có 23 file, mọi tiêu đề đều là prompt của lần chạy A/soak của tôi (kiểm từng `title`, 0 file lạ); đã xóa cả 23, thư mục còn 0 file. Piagent 1.47.0 vẫn ghi vào đó dù đặt `PI_CODING_AGENT_DIR` riêng; các lần chạy A sau này sẽ tạo lại, cần dọn lại sau khi chạy |
+| A/B 4 task khó (xin duyệt, vòng sửa, lane standard) | xong, 24 run | `docs/baseline.md` mục 4: pass B 12/12, A 10/12 (2 lần A thêm test); approvals thật (A 1/lần, B 1–2) và `fixLoops` ≥ 1 xảy ra ở cả hai bên; review helper và checklist-continuation vẫn 0 vì key `review = off` |
+| Compaction + plan còn nguyên | xong | `docs/baseline.md` mục 5 |
+| Studio giả tắt 125 s giữa lượt | xong | `tests/e2e/studio-disconnect.e2e.test.mjs` (`E2E_LONG=1`), `studio_disconnect` outcome `resumed` |
+| Shift+Tab | xong | `tests/e2e/thinking-shift-tab.e2e.test.mjs` |
+| Soak nhiều giờ trên runtime mới | **ĐANG CHẠY** | bắt đầu 15:10 UTC 29/10; ba scenario nối tiếp (`long-node-inventory-platform`, `long-polyglot-platform`, `long-python-billing-platform`, mỗi cái 6 phase hoặc 5 phase, tối đa 150–160 phút mỗi cái), compaction hạ ngưỡng (`--reserve 900000`), cờ/biến theo agentwatch#18 + HOME. Xem tiến độ: `node evals/soak/summarize.mjs <work>/soak-long` (work: thư mục scratchpad của session, hoặc đường dẫn trong `stdout.log` của nó); đến 15:50 UTC: scenario 1 đã qua phase 2, 1 compaction, dừng-rồi-tiếp xong. Kết quả cuối chưa có: ghi vào `docs/baseline.md` mục 3 khi xong |

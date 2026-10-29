@@ -1,0 +1,1 @@
+{ "name": "t2-ts-type", "private": true, "type": "module", "scripts": { "typecheck": "node node_modules/typescript/lib/tsc.js --noEmit -p ." } }

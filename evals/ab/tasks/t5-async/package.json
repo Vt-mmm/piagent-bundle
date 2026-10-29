@@ -1,0 +1,1 @@
+{ "name": "t5-async", "private": true, "type": "module", "scripts": { "test": "node --test" } }

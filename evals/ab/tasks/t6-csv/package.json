@@ -1,0 +1,1 @@
+{ "name": "t6-csv", "private": true, "type": "module", "scripts": { "test": "node --test" } }

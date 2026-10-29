@@ -1,0 +1,1 @@
+{ "name": "h3-coupled", "private": true, "type": "module", "scripts": { "test": "node --test" } }
