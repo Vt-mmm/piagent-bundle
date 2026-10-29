@@ -32,3 +32,15 @@ Mục mở. Làm tiếp phần không bị chặn, hỏi gộp.
 7. **Chờ Studio không giới hạn khi Studio tắt giữa lúc đang stream:** lượt bị cắt phải nhờ retry của Pi (`retry.maxRetries` trong settings của launcher; tạm 3). Studio chập chờn hơn số đó thì lượt lỗi. Có cần provider tự thử lại không (cần bọc thêm, hoặc dừng chấp nhận)?
 8. **Id model trong transcript:** các tin assistant mang id model thật (do stream trong), còn model đang chọn là `agent-watch-auto`, nên Pi coi mỗi lượt là "model khác" và đổi thinking block có chữ ký thành text. Giữ hành vi cũ. Muốn giữ chữ ký thì đặt id model theo route (mất tên cố định).
 9. **Chạy thật trên mini** (Claude run và Codex run qua broker Agent Watch): chưa làm, chờ owner đồng ý trong chat.
+
+
+## Câu hỏi từ bước 2.2 (sandbox)
+
+10. **Vị trí file `sandbox-domains` (F004).** Tạm: `<PI_CODING_AGENT_DIR>/sandbox-domains`, ghi đè bằng `PIAGENT_SANDBOX_DOMAINS`. Một host mỗi dòng, `*.example.com` cho subdomain, IP bị bỏ qua. Duyệt?
+11. **`run_on_host` hỏi mỗi lần kể cả Bypass** (plan 113). Bản cũ ở Bypass chỉ hỏi khi lệnh là handoff hoặc chạm credential. Tạm: theo plan, hỏi mỗi lần.
+12. **`/undo` không sống qua việc tắt/mở lại Pi.** Bản cũ lưu lịch sử checkpoint bền; bản mới giữ trong bộ nhớ và thư mục tạm. Cần lưu xuống `PI_CODING_AGENT_DIR` (resume phiên cũ vẫn `/undo` được) không? Tạm: không.
+13. **Harness kiểm 7 tool lõi (F120) bằng gì.** `sourceInfo.source` là `cli` khi nạp bằng `-e` (sẽ khác khi cài từ npm/git), `sourceInfo.path` là file nhập của package. Tạm: harness so `realpath(sourceInfo.path)` với thư mục package sandbox và đối chiếu `piagent:tools.attest`; không dựa chuỗi `source`. Chốt ở 2.3.
+14. **Tool `powershell` dựng sẵn của Pi** vẫn có trong `getAllTools()` (builtin) và không bị thay. Chỉ liên quan Windows native, ngoài phạm vi (WSL). Chấp nhận, hay harness cũng chặn `powershell`?
+15. **Sandbox gọi được mọi cổng loopback và địa chỉ LAN của chính máy** (xem carry-over 2). Chấp nhận như bản cũ, hay siết (ví dụ chỉ cho cổng do chính lệnh mở — Seatbelt không hỗ trợ)?
+16. **Bộ chọn lọc handoff** (carry-over 5): cần review bảo mật trước khi tin tương đương bản cũ. Ai review, và có chạy lại bộ test lớn của `piagent` làm so sánh không?
+17. **Chạy WSL2 thật** (máy Windows có WSL2): chưa có máy. Cần máy để đóng nghiệm thu C8.

@@ -16,12 +16,13 @@ Phía provider (đã cài, `piagent-provider/src/bus.mjs`, test ở `tests/bus.t
 | `piagent:studio.call` | harness → provider | `{ v, method: 'GET'\|'POST', path, body?, reply }` → `reply({ v, ok, status, body })` (body đã che secret, tối đa 1 MiB). `path` chỉ được `/v1/...` hoặc `/studio/v1/managed/...` (không `..`, không `//`, không URL tuyệt đối). Dùng grant main. Để harness gửi settle, tool failures, workspace, memory mà không cầm token. |
 | `piagent:notice` | provider → mọi bên | `{ v, type, ... }` — `provider_ready`, `managed_studio_wait` (start/waiting/end), `managed_capacity_wait`. |
 
-Phía sandbox/harness (nháp, chốt ở 2.2/2.3):
+Phía sandbox (đã cài, `piagent-sandbox/src/index.mjs`, test ở `tests/sandbox-core-tools.test.mjs`, `tests/sandbox-permission-modes.test.mjs`); harness chốt ở 2.3:
 
 | Kênh | Hướng | Payload (v1) |
 |---|---|---|
-| `piagent:tools.attest` | sandbox → harness | `{ v, tools: [{ name, source }] }` — để harness kiểm `sourceInfo` |
-| `piagent:permission.mode` | sandbox → harness | `{ v, mode: 'ask'\|'full'\|'bypass' }` |
+| `piagent:tools.attest` | sandbox → harness | `{ v, tools: [{ name, source: 'piagent-sandbox' }] }` — phát ở `session_start` và mỗi `before_agent_start`; gồm 7 tool lõi và các tool duyệt/process. Harness vẫn nên kiểm `sourceInfo.path` (xem QUESTIONS 13). |
+| `piagent:permission.mode` | sandbox → harness | `{ v, mode: 'ask'\|'full'\|'bypass' }` — phát khi khôi phục từ hội thoại (`session_start`) và mỗi lần đổi; Bypass bị rút lại thì phát `full`. |
+| `piagent:run.state` | provider → harness, **sandbox cũng đọc** | chỉ đọc `harness.bypassMode === true` để cho phép `/bypass on`; không có thì Bypass bị từ chối (`managed-bypass-unavailable`). |
 
 Khác với nháp v0: `grant.result` bỏ (kết quả đi qua `reply`, vì cần trả hàm `stream`); thêm `grant.close`, `run.process`, `studio.call`, `notice`.
 
@@ -29,7 +30,7 @@ Khác với nháp v0: `grant.result` bỏ (kết quả đi qua `reply`, vì cầ
 
 | provider | harness | sandbox | bus |
 |---|---|---|---|
-| 0.x (2.1) | chưa | chưa | v1 |
+| 0.x (2.1) | chưa | 0.x (2.2) | v1 |
 
 Thay đổi sau này ghi ở đây kèm ma trận version.
 
